@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layout/base :: layout(~{::title}, ~{::content})}">
+<head>
+    <title>Register Seller - Coconut Marketplace</title>
+</head>
+<body>
+    <div th:fragment="content" class="full-height-center py-5">
+        <div class="auth-card my-5">
+            <div class="custom-card">
+                <div class="text-center mb-4">
+                    <span style="font-size: 40px;">🏭</span>
+                    <h2 class="mt-2" style="font-weight: 700; color: var(--teal-secondary); font-size: 24px;">Register as Seller</h2>
+                    <p class="text-muted" style="font-size: 13px;">Create an account to sell coconut products</p>
+                </div>
+
+                <!-- Registration Alert -->
+                <div th:if="${error}" class="alert alert-danger py-2 px-3 mb-3" style="font-size: 13px; border-radius: 8px;" th:text="${error}">
+                    Registration error.
+                </div>
+
+                <form th:action="@{/register/seller}" method="post" id="registration-form" class="needs-validation" novalidate>
+                    <!-- Full Name -->
+                    <div class="mb-3">
+                        <label for="fullName" class="form-label" style="font-weight: 500; color: var(--text-dark);">Full Name</label>
+                        <input type="text" name="fullName" id="fullName" class="form-input" th:value="${fullName}" placeholder="John Doe" minlength="2" required>
+                        <div class="invalid-feedback">Full name must be at least 2 characters.</div>
+                    </div>
+
+                    <!-- Email with Send OTP Button -->
+                    <div class="mb-3">
+                        <label for="email" class="form-label" style="font-weight: 500; color: var(--text-dark);">Email Address</label>
+                        <div class="input-group">
+                            <input type="email" name="email" id="email" class="form-input" th:value="${email}" placeholder="john@example.com" required>
+                            <button type="button" class="btn-secondary-custom countdown-btn" id="send-otp-btn" onclick="sendOtp()">Send OTP</button>
+                        </div>
+                        <div class="invalid-feedback">Please enter a valid email address.</div>
+                        <div id="email-error" class="text-danger mt-1" style="font-size: 12px; display: none; font-weight: 500;"></div>
+                        <div id="email-verified-status" class="mt-1" style="font-size: 12px; display: none; font-weight: 600;"></div>
+                    </div>
+
+                    <!-- Hidden OTP Input (displayed after sending) -->
+                    <div class="mb-3 d-none" id="otp-row">
+                        <label for="otp" class="form-label" style="font-weight: 500; color: var(--text-dark);">Enter 6-Digit OTP</label>
+                        <div class="input-group">
+                            <input type="text" id="otp" class="form-input" placeholder="123456" maxlength="6" pattern="\d{6}">
+                            <button type="button" class="btn-primary-custom" id="verify-otp-btn" onclick="verifyOtp()">Verify OTP</button>
+                        </div>
+                        <div id="otp-feedback" class="text-danger mt-1" style="font-size: 12px; display: none; font-weight: 500;"></div>
+                    </div>
+
+                    <!-- Store Name -->
+                    <div class="mb-3">
+                        <label for="storeName" class="form-label" style="font-weight: 500; color: var(--text-dark);">Store Name</label>
+                        <input type="text" name="storeName" id="storeName" class="form-input" th:value="${storeName}" placeholder="Coconut Delights Inc." minlength="2" required>
+                        <div class="invalid-feedback">Store name must be at least 2 characters.</div>
+                    </div>
+
+                    <!-- Store Description -->
+                    <div class="mb-3">
+                        <label for="storeDescription" class="form-label" style="font-weight: 500; color: var(--text-dark);">Store Description</label>
+                        <textarea name="storeDescription" id="storeDescription" class="form-input" rows="3" placeholder="Tell buyers about your shop and offerings..." minlength="10" th:text="${storeDescription}" required></textarea>
+                        <div class="invalid-feedback">Description must be at least 10 characters long.</div>
+                    </div>
+
+                    <!-- Password -->
+                    <div class="mb-3">
+                        <label for="password" class="form-label" style="font-weight: 500; color: var(--text-dark);">Password</label>
+                        <input type="password" name="password" id="password" class="form-input" placeholder="••••••••" minlength="6" required>
+                        <div class="invalid-feedback">Password must be at least 6 characters.</div>
+                    </div>
+
+                    <!-- Confirm Password -->
+                    <div class="mb-4">
+                        <label for="confirmPassword" class="form-label" style="font-weight: 500; color: var(--text-dark);">Confirm Password</label>
+                        <input type="password" name="confirmPassword" id="confirmPassword" class="form-input" placeholder="••••••••" required>
+                        <div class="invalid-feedback" id="confirmPasswordFeedback">Please confirm your password.</div>
+                    </div>
+
+                    <!-- Register Button (Disabled on Load) -->
+                    <button type="submit" class="btn-disabled-custom w-100 mb-3 btn-primary-custom" style="background-color: var(--teal-secondary) !important;" id="register-btn" disabled>Register as Seller</button>
+
+                    <div class="text-center">
+                        <span class="text-muted" style="font-size: 13px;">Already have an account? </span>
+                        <a th:href="@{/login}" style="color: var(--primary-blue); font-weight: 600; text-decoration: none; font-size: 13px;">Login here</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <script>
+            let countdownInterval;
+
+            // Password confirmation matching check
+            document.getElementById('registration-form').addEventListener('submit', function(event) {
+                const password = document.getElementById('password').value;
+                const confirmPassword = document.getElementById('confirmPassword').value;
+                const confirmInput = document.getElementById('confirmPassword');
+                const feedback = document.getElementById('confirmPasswordFeedback');
+
+                if (password !== confirmPassword) {
+                    confirmInput.setCustomValidity("Passwords do not match");
+                    feedback.innerText = "Passwords must match exactly.";
+                    event.preventDefault();
+                    event.stopPropagation();
+                } else {
+                    confirmInput.setCustomValidity("");
+                }
+
+                if (!this.checkValidity()) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                }
+
+                this.classList.add('was-validated');
+            });
+
+            async function sendOtp() {
+                const emailInput = document.getElementById('email');
+                const email = emailInput.value.trim();
+                const errorText = document.getElementById('email-error');
+                const otpRow = document.getElementById('otp-row');
+                const sendOtpBtn = document.getElementById('send-otp-btn');
+                const otpFeedback = document.getElementById('otp-feedback');
+
+                errorText.innerText = '';
+                errorText.style.display = 'none';
+                otpFeedback.innerText = '';
+                otpFeedback.style.display = 'none';
+
+                if (!email || !emailInput.checkValidity()) {
+                    errorText.innerText = 'Please enter a valid email address first.';
+                    errorText.style.display = 'block';
+                    return;
+                }
+
+                try {
+                    sendOtpBtn.disabled = true;
+                    sendOtpBtn.innerText = 'Sending...';
+
+                    const csrfToken = document.querySelector('meta[name="_csrf"]').getAttribute('content');
+                    const csrfHeader = document.querySelector('meta[name="_csrf_header"]').getAttribute('content');
+
+                    const params = new URLSearchParams();
+                    params.append('email', email);
+
+                    const response = await fetch('/otp/send', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded',
+                            [csrfHeader]: csrfToken
+                        },
+                        body: params
+                    });
+
+                    const data = await response.json();
+
+                    if (response.ok && data.status === 'sent') {
+                        otpRow.classList.remove('d-none');
+                        errorText.innerText = 'Please verify your email to continue.';
+                        errorText.style.color = 'var(--error-red)';
+                        errorText.style.display = 'block';
+                        startCountdown(30);
+                    } else {
+                        sendOtpBtn.disabled = false;
+                        sendOtpBtn.innerText = 'Send OTP';
+                        errorText.innerText = data.message || 'Failed to send OTP. Please try again.';
+                        errorText.style.display = 'block';
+                    }
+                } catch (err) {
+                    sendOtpBtn.disabled = false;
+                    sendOtpBtn.innerText = 'Send OTP';
+                    errorText.innerText = 'Failed to send OTP. Please try again.';
+                    errorText.style.display = 'block';
+                }
+            }
+
+            function startCountdown(seconds) {
+                const sendOtpBtn = document.getElementById('send-otp-btn');
+                clearInterval(countdownInterval);
+                let timeLeft = seconds;
+
+                sendOtpBtn.disabled = true;
+                sendOtpBtn.innerText = `Resend OTP (00:${timeLeft < 10 ? '0' : ''}${timeLeft})`;
+
+                countdownInterval = setInterval(() => {
+                    timeLeft--;
+                    if (timeLeft <= 0) {
+                        clearInterval(countdownInterval);
+                        sendOtpBtn.disabled = false;
+                        sendOtpBtn.innerText = 'Send OTP';
+                    } else {
+                        sendOtpBtn.innerText = `Resend OTP (00:${timeLeft < 10 ? '0' : ''}${timeLeft})`;
+                    }
+                }, 1000);
+            }
+
+            async function verifyOtp() {
+                const email = document.getElementById('email').value.trim();
+                const otp = document.getElementById('otp').value.trim();
+                const otpFeedback = document.getElementById('otp-feedback');
+                const emailError = document.getElementById('email-error');
+                const otpRow = document.getElementById('otp-row');
+                const registerBtn = document.getElementById('register-btn');
+                const sendOtpBtn = document.getElementById('send-otp-btn');
+
+                otpFeedback.innerText = '';
+                otpFeedback.style.display = 'none';
+
+                if (!otp || otp.length !== 6) {
+                    otpFeedback.innerText = 'Please enter a 6-digit numeric OTP.';
+                    otpFeedback.style.display = 'block';
+                    return;
+                }
+
+                try {
+                    const csrfToken = document.querySelector('meta[name="_csrf"]').getAttribute('content');
+                    const csrfHeader = document.querySelector('meta[name="_csrf_header"]').getAttribute('content');
+
+                    const params = new URLSearchParams();
+                    params.append('email', email);
+                    params.append('otp', otp);
+
+                    const response = await fetch('/otp/verify', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded',
+                            [csrfHeader]: csrfToken
+                        },
+                        body: params
+                    });
+
+                    const data = await response.json();
+
+                    if (data.status === 'verified') {
+                        otpRow.classList.add('d-none');
+                        emailError.style.display = 'none';
+                        
+                        const emailVerifiedStatus = document.getElementById('email-verified-status');
+                        emailVerifiedStatus.innerText = '✓ Email Verified';
+                        emailVerifiedStatus.style.display = 'block';
+                        emailVerifiedStatus.style.color = 'var(--success-green)';
+
+                        document.getElementById('email').readOnly = true;
+                        sendOtpBtn.style.display = 'none';
+
+                        registerBtn.removeAttribute('disabled');
+                        registerBtn.classList.remove('btn-disabled-custom');
+                    } else if (data.status === 'expired') {
+                        otpFeedback.innerText = 'OTP has expired. Please click Send OTP to get a new one.';
+                        otpFeedback.style.display = 'block';
+                        clearInterval(countdownInterval);
+                        sendOtpBtn.disabled = false;
+                        sendOtpBtn.innerText = 'Send OTP';
+                    } else {
+                        otpFeedback.innerText = 'Incorrect OTP. Please try again.';
+                        otpFeedback.style.display = 'block';
+                    }
+                } catch (err) {
+                    otpFeedback.innerText = 'Verification failed. Please try again.';
+                    otpFeedback.style.display = 'block';
+                }
+            }
+        </script>
+    </div>
+</body>
+</html>

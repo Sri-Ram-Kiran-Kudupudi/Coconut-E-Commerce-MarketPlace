@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layout/base :: layout(~{::title}, ~{::content})}">
+<head>
+    <title>Select Role - Coconut Marketplace</title>
+</head>
+<body>
+    <div th:fragment="content" class="container py-5">
+        <div class="row justify-content-center text-center mb-5">
+            <div class="col-lg-8">
+                <h1 class="page-h1 mt-4">Join Coconut Marketplace</h1>
+                <p class="lead text-muted" style="font-size: 16px;">Choose your role to get started with the ultimate coconut marketplace</p>
+            </div>
+        </div>
+
+        <div class="row justify-content-center g-4">
+            <!-- Buyer Card Option -->
+            <div class="col-md-5 col-lg-4">
+                <div class="custom-card role-selection-card py-4 px-3" onclick="window.location.href='/register/buyer'">
+                    <div>
+                        <!-- Animated Buyer SVG -->
+                        <div class="role-card-icon">
+                            <svg viewBox="0 0 100 100" width="80" height="80">
+                                <!-- Person outline -->
+                                <circle cx="50" cy="30" r="14" fill="var(--primary-blue)" />
+                                <path d="M20 75 C20 52, 80 52, 80 75" fill="var(--primary-blue)" />
+                                <!-- Shopping bag with bounce class -->
+                                <g class="bag-bounce">
+                                    <rect x="62" y="52" width="22" height="22" rx="3" fill="var(--teal-secondary)" />
+                                    <path d="M67 52 C67 44, 79 44, 79 52" stroke="var(--teal-secondary)" stroke-width="3" fill="none" />
+                                </g>
+                            </svg>
+                        </div>
+                        <h3 class="mb-2" style="font-size: 22px; font-weight: 700; color: var(--text-dark);">Buyer</h3>
+                        <p class="text-muted px-2" style="font-size: 13px;">Browse the finest coconuts, derivatives, water, shell products, and purchase seamlessly.</p>
+                    </div>
+                    <div class="mt-4">
+                        <a th:href="@{/register/buyer}" class="btn-primary-custom w-100">Register as Buyer</a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Seller Card Option -->
+            <div class="col-md-5 col-lg-4">
+                <div class="custom-card role-selection-card py-4 px-3" onclick="window.location.href='/register/seller'">
+                    <div>
+                        <!-- Animated Seller SVG -->
+                        <div class="role-card-icon">
+                            <svg viewBox="0 0 100 100" width="80" height="80">
+                                <!-- Person behind counter with sway class -->
+                                <g class="person-sway">
+                                    <circle cx="50" cy="30" r="14" fill="var(--teal-secondary)" />
+                                    <path d="M25 70 C25 48, 75 48, 75 70" fill="var(--teal-secondary)" />
+                                </g>
+                                <!-- Store counter in foreground -->
+                                <rect x="10" y="65" width="80" height="16" fill="var(--primary-blue)" rx="3" />
+                                <rect x="20" y="81" width="10" height="12" fill="#1557B0" />
+                                <rect x="70" y="81" width="10" height="12" fill="#1557B0" />
+                            </svg>
+                        </div>
+                        <h3 class="mb-2" style="font-size: 22px; font-weight: 700; color: var(--text-dark);">Seller</h3>
+                        <p class="text-muted px-2" style="font-size: 13px;">Create your profile, manage products, fulfill orders, and showcase your brand to buyers.</p>
+                    </div>
+                    <div class="mt-4">
+                        <a th:href="@{/register/seller}" class="btn-secondary-custom w-100">Register as Seller</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="text-center mt-5">
+            <span class="text-muted" style="font-size: 13px;">Already registered? </span>
+            <a th:href="@{/login}" style="color: var(--primary-blue); font-weight: 600; text-decoration: none; font-size: 13px;">Login here</a>
+        </div>
+    </div>
+</body>
+</html>

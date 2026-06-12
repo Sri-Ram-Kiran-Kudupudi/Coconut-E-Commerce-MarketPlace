@@ -9,17 +9,105 @@
         <!-- Header -->
         <div class="mb-4">
             <h1 class="page-h1 mb-1">My Purchase Orders</h1>
-            <p class="text-muted">Track order processing, logistics shipping status, and historical purchases.</p>
+            <p class="text-muted">Track order status, fulfillment logistics, and historical purchases.</p>
         </div>
 
-        <!-- Empty State (Wired to orders database in Phase 4) -->
-        <div class="custom-card text-center py-5">
+        <!-- Empty State -->
+        <div th:if="${#lists.isEmpty(orders)}" class="custom-card text-center py-5">
             <span style="font-size: 72px; display: block; margin-bottom: 20px;">📦</span>
             <h2 class="mb-2" style="font-weight: 700; color: var(--text-dark);">No Orders Placed Yet</h2>
             <p class="text-muted mb-4" style="max-width: 400px; margin: 0 auto 20px;">You haven't ordered any coconut products yet. Visit the catalog to find organic farm goods!</p>
             <a th:href="@{/buyer/dashboard}" class="btn-primary-custom">
                 Start Shopping Now
             </a>
+        </div>
+
+        <!-- Orders List -->
+        <div th:if="${!#lists.isEmpty(orders)}" class="d-flex flex-column gap-4">
+            <div th:each="order : ${orders}" class="custom-card p-0 overflow-hidden shadow-sm">
+                <!-- Order Header Details -->
+                <div class="p-3 bg-light border-bottom d-flex justify-content-between align-items-center flex-wrap gap-2" style="font-size: 13.5px;">
+                    <div>
+                        <span class="text-muted">Order Number:</span>
+                        <strong class="text-dark" th:text="${order.orderNumber}">COC-00000000-0000</strong>
+                    </div>
+                    <div>
+                        <span class="text-muted">Placed On:</span>
+                        <strong class="text-dark" th:text="${#temporals.format(order.createdAt, 'dd MMM yyyy, hh:mm a')}">12 Jun 2026</strong>
+                    </div>
+                    <div>
+                        <span class="text-muted">Payment:</span>
+                        <strong class="text-dark" th:text="${order.paymentMethod + ' (' + order.paymentStatus + ')'}">COD (PENDING)</strong>
+                    </div>
+                    <div>
+                        <span class="text-muted">Total:</span>
+                        <strong class="text-success fw-bold" th:text="${'₹' + order.totalAmount}">₹0.00</strong>
+                    </div>
+                </div>
+
+                <div class="p-4">
+                    <div class="row g-4">
+                        <!-- Items list (8 cols) -->
+                        <div class="col-md-8">
+                            <h4 class="mb-3" style="font-size: 15px; font-weight: 700; color: var(--text-dark);">Ordered Items</h4>
+                            <div class="d-flex flex-column gap-3">
+                                <div th:each="item : ${order.orderItems}" class="d-flex align-items-center gap-3">
+                                    <!-- Image Thumbnail -->
+                                    <div style="width: 50px; height: 50px; background: #F8FAF8; border-radius: 8px; display: flex; align-items: center; justify-content: center; padding: 4px; border: 1px solid var(--border-color); flex-shrink: 0;">
+                                        <img th:src="${item.product.imageUrl}" alt="Product Image" style="max-width: 100%; max-height: 100%; object-fit: contain;">
+                                    </div>
+                                    <!-- Product Name & Shop -->
+                                    <div class="flex-grow-1 min-width-0">
+                                        <strong th:text="${item.productName}" style="color: var(--text-dark); font-size: 14px; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Product Name</strong>
+                                        <span class="text-muted" style="font-size: 11.5px;">
+                                            Shop: <span th:text="${item.seller.storeName}" style="color: var(--primary-green); font-weight: 600;">Store</span>
+                                        </span>
+                                    </div>
+                                    <!-- Price details -->
+                                    <div class="text-nowrap" style="font-size: 13.5px; color: var(--text-dark);">
+                                        <span th:text="${item.quantity + ' x ₹' + item.price}">1 x ₹0.00</span>
+                                    </div>
+                                    <!-- Status badge -->
+                                    <div class="text-end" style="min-width: 110px;">
+                                        <span th:if="${item.status.name() == 'PENDING'}" class="badge bg-warning text-dark" style="font-size: 10.5px; font-weight: 600; padding: 4px 8px; border-radius: 12px;">Pending</span>
+                                        <span th:if="${item.status.name() == 'CONFIRMED'}" class="badge bg-info text-dark" style="font-size: 10.5px; font-weight: 600; padding: 4px 8px; border-radius: 12px;">Confirmed</span>
+                                        <span th:if="${item.status.name() == 'SHIPPED'}" class="badge bg-primary" style="font-size: 10.5px; font-weight: 600; padding: 4px 8px; border-radius: 12px;">Shipped</span>
+                                        <span th:if="${item.status.name() == 'DELIVERED'}" class="badge bg-success" style="font-size: 10.5px; font-weight: 600; padding: 4px 8px; border-radius: 12px;">Delivered</span>
+                                        <span th:if="${item.status.name() == 'CANCELLED'}" class="badge bg-danger" style="font-size: 10.5px; font-weight: 600; padding: 4px 8px; border-radius: 12px;">Cancelled</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Shipping Address Coordinates (4 cols) -->
+                        <div class="col-md-4" style="border-left: 1px solid var(--border-color); padding-left: 24px;">
+                            <h4 class="mb-3" style="font-size: 15px; font-weight: 700; color: var(--text-dark);">Shipping Address</h4>
+                            <div style="font-size: 13px; line-height: 1.5; color: var(--text-grey);">
+                                <strong th:text="${order.fullName}" style="color: var(--text-dark); display: block; margin-bottom: 4px;">John Doe</strong>
+                                <span th:text="${order.address}" style="display: block; margin-bottom: 2px;">123 Street</span>
+                                <span th:text="${order.city + ', ' + order.district}" style="display: block; margin-bottom: 2px;">City, District</span>
+                                <span th:text="${order.state + ' - ' + order.pincode}" style="display: block; margin-bottom: 4px;">State - Pincode</span>
+                                <span style="display: block;">📞 <span th:text="${order.phoneNumber}">9876543210</span></span>
+                                <span style="display: block;">📧 <span th:text="${order.email}">email@example.com</span></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Cost Footer breakdown -->
+                    <div class="mt-4 pt-3 border-top d-flex justify-content-end gap-4" style="font-size: 13px; color: var(--text-grey);">
+                        <div>
+                            Subtotal: <strong th:text="${'₹' + order.subtotal}" style="color: var(--text-dark);">₹0.00</strong>
+                        </div>
+                        <div>
+                            Delivery: <strong th:text="${order.deliveryCharge == 0 ? 'FREE' : '₹' + order.deliveryCharge}" style="color: var(--text-dark);">₹0.00</strong>
+                        </div>
+                        <div>
+                            Total Amount: <strong th:text="${'₹' + order.totalAmount}" class="text-success" style="font-size: 14.5px;">₹0.00</strong>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
         </div>
 
     </div>

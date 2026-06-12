@@ -3,11 +3,13 @@ package com.coconut.coconut_marketplace.controller;
 import com.coconut.coconut_marketplace.dto.CartItemDto;
 import com.coconut.coconut_marketplace.entity.Product;
 import com.coconut.coconut_marketplace.entity.User;
+import com.coconut.coconut_marketplace.entity.Order;
 import com.coconut.coconut_marketplace.enums.Category;
 import com.coconut.coconut_marketplace.enums.ProductStatus;
 import com.coconut.coconut_marketplace.repository.ProductRepository;
 import com.coconut.coconut_marketplace.repository.UserRepository;
 import com.coconut.coconut_marketplace.service.ProductService;
+import com.coconut.coconut_marketplace.service.OrderService;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -35,6 +37,9 @@ public class BuyerController {
 
     @Autowired
     private ProductService productService;
+
+    @Autowired
+    private OrderService orderService;
 
     private static final String CART_SESSION_KEY = "sessionCart";
 
@@ -266,11 +271,75 @@ public class BuyerController {
         }
     }
 
+    @GetMapping("/checkout")
+    public String viewCheckout(Model model, Principal principal, HttpSession session) {
+        User user = getLoggedInUser(principal);
+        Map<Long, CartItemDto> cart = getCartFromSession(session);
+        if (cart.isEmpty()) {
+            return "redirect:/buyer/cart";
+        }
+
+        BigDecimal subtotal = cart.values().stream()
+                .map(CartItemDto::getTotalPrice)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        BigDecimal deliveryCharge = subtotal.compareTo(BigDecimal.valueOf(500)) >= 0 
+                ? BigDecimal.ZERO 
+                : BigDecimal.valueOf(50);
+        BigDecimal totalAmount = subtotal.add(deliveryCharge);
+
+        Order shippingInfo = Order.builder()
+                .fullName(user.getFullName())
+                .email(user.getEmail())
+                .phoneNumber(user.getPhoneNumber() != null ? user.getPhoneNumber() : "")
+                .address(user.getAddress() != null ? user.getAddress() : "")
+                .city("")
+                .district("")
+                .state("")
+                .pincode("")
+                .build();
+
+        model.addAttribute("cartItems", new ArrayList<>(cart.values()));
+        model.addAttribute("cartSubtotal", subtotal);
+        model.addAttribute("deliveryCharge", deliveryCharge);
+        model.addAttribute("totalAmount", totalAmount);
+        model.addAttribute("shippingInfo", shippingInfo);
+        
+        return "buyer/checkout";
+    }
+
+    @PostMapping("/checkout")
+    public String processCheckout(@ModelAttribute("shippingInfo") Order shippingInfo,
+                                  HttpSession session,
+                                  Principal principal,
+                                  RedirectAttributes redirectAttributes) {
+        try {
+            User buyer = getLoggedInUser(principal);
+            Map<Long, CartItemDto> cart = getCartFromSession(session);
+            if (cart.isEmpty()) {
+                redirectAttributes.addFlashAttribute("error", "Your cart is empty. Cannot checkout.");
+                return "redirect:/buyer/cart";
+            }
+
+            Order placedOrder = orderService.createOrderFromCart(buyer, new ArrayList<>(cart.values()), shippingInfo);
+
+            // Success, clear session cart
+            session.removeAttribute(CART_SESSION_KEY);
+            session.setAttribute("cartCount", 0);
+
+            redirectAttributes.addFlashAttribute("successMessage", "Order placed successfully! Order Number: " + placedOrder.getOrderNumber());
+            return "redirect:/buyer/orders";
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("error", e.getMessage());
+            return "redirect:/buyer/checkout";
+        }
+    }
+
     @GetMapping("/orders")
     public String showOrders(Model model, Principal principal) {
-        getLoggedInUser(principal);
-        // Persisted database order tracking will be implemented in Phase 4.
-        model.addAttribute("orders", new ArrayList<>());
+        User buyer = getLoggedInUser(principal);
+        List<Order> orders = orderService.getOrdersByBuyer(buyer);
+        model.addAttribute("orders", orders);
         return "buyer/orders";
     }
 }

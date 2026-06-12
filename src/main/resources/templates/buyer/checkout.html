@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layout/base :: layout(~{::title}, ~{::content})}">
+<head>
+    <title>Checkout - Coconut Marketplace</title>
+</head>
+<body>
+    <div th:fragment="content" class="container py-5">
+        
+        <!-- Header -->
+        <div class="mb-4">
+            <h1 class="page-h1 mb-1">Shipping & Checkout</h1>
+            <p class="text-muted">Provide your delivery coordinates and place your Cash on Delivery (COD) order.</p>
+        </div>
+
+        <div class="row g-4">
+            <!-- Delivery Info Form (8 cols) -->
+            <div class="col-lg-8">
+                <div class="custom-card p-4">
+                    <h3 class="mb-3" style="font-size: 18px; font-weight: 700; color: var(--text-dark);">Delivery Information</h3>
+                    <hr class="my-3" style="border-color: var(--border-color);">
+
+                    <form th:action="@{/buyer/checkout}" method="post" th:object="${shippingInfo}">
+                        <div class="row g-3">
+                            <!-- Full Name -->
+                            <div class="col-md-6">
+                                <label for="fullName" class="form-label" style="font-weight: 600; font-size: 13.5px; color: var(--text-dark);">Full Name</label>
+                                <input type="text" id="fullName" th:field="*{fullName}" class="form-input" placeholder="Enter full name" required>
+                            </div>
+
+                            <!-- Email -->
+                            <div class="col-md-6">
+                                <label for="email" class="form-label" style="font-weight: 600; font-size: 13.5px; color: var(--text-dark);">Email Address</label>
+                                <input type="email" id="email" th:field="*{email}" class="form-input" placeholder="name@example.com" required>
+                            </div>
+
+                            <!-- Phone Number -->
+                            <div class="col-md-6">
+                                <label for="phoneNumber" class="form-label" style="font-weight: 600; font-size: 13.5px; color: var(--text-dark);">Phone Number</label>
+                                <input type="text" id="phoneNumber" th:field="*{phoneNumber}" class="form-input" placeholder="10-digit mobile number" required>
+                            </div>
+
+                            <!-- Pincode -->
+                            <div class="col-md-6">
+                                <label for="pincode" class="form-label" style="font-weight: 600; font-size: 13.5px; color: var(--text-dark);">Pincode</label>
+                                <input type="text" id="pincode" th:field="*{pincode}" class="form-input" placeholder="6-digit postal code" required>
+                            </div>
+
+                            <!-- Street Address -->
+                            <div class="col-12">
+                                <label for="address" class="form-label" style="font-weight: 600; font-size: 13.5px; color: var(--text-dark);">Delivery Address</label>
+                                <textarea id="address" th:field="*{address}" class="form-input" rows="3" placeholder="Flat/House no., Street details, Area" required></textarea>
+                            </div>
+
+                            <!-- City / Town -->
+                            <div class="col-md-4">
+                                <label for="city" class="form-label" style="font-weight: 600; font-size: 13.5px; color: var(--text-dark);">City / Town</label>
+                                <input type="text" id="city" th:field="*{city}" class="form-input" placeholder="Enter city" required>
+                            </div>
+
+                            <!-- District -->
+                            <div class="col-md-4">
+                                <label for="district" class="form-label" style="font-weight: 600; font-size: 13.5px; color: var(--text-dark);">District</label>
+                                <input type="text" id="district" th:field="*{district}" class="form-input" placeholder="Enter district" required>
+                            </div>
+
+                            <!-- State -->
+                            <div class="col-md-4">
+                                <label for="state" class="form-label" style="font-weight: 600; font-size: 13.5px; color: var(--text-dark);">State</label>
+                                <input type="text" id="state" th:field="*{state}" class="form-input" placeholder="Enter state" required>
+                            </div>
+                        </div>
+
+                        <!-- Payment Method Section -->
+                        <h3 class="mt-4 mb-3" style="font-size: 18px; font-weight: 700; color: var(--text-dark);">Payment Method</h3>
+                        <hr class="my-3" style="border-color: var(--border-color);">
+                        
+                        <div class="p-3 border rounded-3 mb-4" style="background-color: #FAFCFA; border-color: var(--border-color);">
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="paymentOption" id="codPayment" checked style="accent-color: var(--primary-green);">
+                                <label class="form-check-label" for="codPayment" style="font-weight: 600; color: var(--text-dark);">
+                                    💵 Cash on Delivery (COD)
+                                </label>
+                                <span class="d-block text-muted mt-1" style="font-size: 12.5px;">Pay with cash upon package receipt. No online transaction details needed for this stage.</span>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn-primary-custom w-100 py-3" style="font-size: 16px; font-weight: 700;">
+                            Confirm & Place Order
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Order Items Overview Column (4 cols) -->
+            <div class="col-lg-4">
+                <div class="custom-card p-4">
+                    <h3 class="mb-3" style="font-size: 18px; font-weight: 700; color: var(--text-dark);">Order Summary</h3>
+                    <hr class="my-3" style="border-color: var(--border-color);">
+
+                    <!-- List of items -->
+                    <div class="d-flex flex-column gap-3 mb-4">
+                        <div th:each="item : ${cartItems}" class="d-flex gap-3 align-items-center">
+                            <!-- Small Image -->
+                            <div style="width: 50px; height: 50px; background: #F8FAF8; border-radius: 8px; display: flex; align-items: center; justify-content: center; padding: 4px; border: 1px solid var(--border-color); flex-shrink: 0;">
+                                <img th:src="${item.imageUrl}" alt="Product thumbnail" style="max-width: 100%; max-height: 100%; object-fit: contain;">
+                            </div>
+                            <!-- Title & Qty -->
+                            <div class="flex-grow-1 min-width-0">
+                                <span th:text="${item.productName}" style="font-weight: 600; color: var(--text-dark); font-size: 13.5px; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Product Name</span>
+                                <span class="text-muted" style="font-size: 11.5px;" th:text="${item.quantity + ' x ₹' + item.price}">1 x ₹0.00</span>
+                            </div>
+                            <!-- Price sum -->
+                            <div class="text-end" style="font-weight: 600; color: var(--text-dark); font-size: 13.5px;" th:text="${'₹' + item.totalPrice}">
+                                ₹0.00
+                            </div>
+                        </div>
+                    </div>
+
+                    <hr class="my-3" style="border-color: var(--border-color);">
+
+                    <!-- Pricing breakdown -->
+                    <div class="d-flex justify-content-between mb-2" style="font-size: 14px;">
+                        <span class="text-muted">Subtotal</span>
+                        <span th:text="${'₹' + cartSubtotal}" style="font-weight: 600; color: var(--text-dark);">₹0.00</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-3" style="font-size: 14px;">
+                        <span class="text-muted">Delivery Charges</span>
+                        <span th:text="${deliveryCharge == 0 ? 'FREE' : '₹' + deliveryCharge}" 
+                              th:class="${deliveryCharge == 0 ? 'text-success fw-bold' : ''}"
+                              style="font-weight: 600; color: var(--text-dark);">₹0.00</span>
+                    </div>
+
+                    <hr class="my-3" style="border-color: var(--border-color);">
+
+                    <!-- Final Cost -->
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <span style="font-weight: 700; color: var(--text-dark); font-size: 16px;">Total Payable</span>
+                        <span th:text="${'₹' + totalAmount}" class="fs-4 fw-bold text-success">₹0.00</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</body>
+</html>

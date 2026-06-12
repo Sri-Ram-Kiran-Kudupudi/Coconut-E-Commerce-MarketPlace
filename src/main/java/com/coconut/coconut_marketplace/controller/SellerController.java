@@ -3,17 +3,22 @@ package com.coconut.coconut_marketplace.controller;
 import com.coconut.coconut_marketplace.entity.Product;
 import com.coconut.coconut_marketplace.entity.SellerProfile;
 import com.coconut.coconut_marketplace.entity.User;
+import com.coconut.coconut_marketplace.entity.OrderItem;
 import com.coconut.coconut_marketplace.enums.Category;
 import com.coconut.coconut_marketplace.enums.ProductStatus;
+import com.coconut.coconut_marketplace.enums.OrderStatus;
 import com.coconut.coconut_marketplace.repository.SellerProfileRepository;
 import com.coconut.coconut_marketplace.repository.UserRepository;
+import com.coconut.coconut_marketplace.repository.OrderItemRepository;
 import com.coconut.coconut_marketplace.service.ProductService;
+import com.coconut.coconut_marketplace.service.OrderService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+import java.math.BigDecimal;
 
 import java.security.Principal;
 import java.util.Arrays;
@@ -31,6 +36,12 @@ public class SellerController {
 
     @Autowired
     private ProductService productService;
+
+    @Autowired
+    private OrderService orderService;
+
+    @Autowired
+    private OrderItemRepository orderItemRepository;
 
     // List of predefined product images under static folder
     private static final List<String> PREDEFINED_IMAGES = Arrays.asList(
@@ -67,14 +78,15 @@ public class SellerController {
         SellerProfile seller = getLoggedInSeller(principal);
         List<Product> products = productService.getProductsBySeller(seller);
 
+        long totalOrders = orderItemRepository.countDistinctOrdersBySeller(seller);
+        BigDecimal totalSales = orderItemRepository.sumRevenueBySellerAndStatusNot(seller, OrderStatus.CANCELLED);
+
         model.addAttribute("seller", seller);
         model.addAttribute("products", products);
         model.addAttribute("totalProducts", productService.getProductCountBySeller(seller));
         model.addAttribute("activeProducts", productService.getActiveProductCountBySeller(seller));
-        
-        // Mock analytics metrics for UI display
-        model.addAttribute("totalSales", "₹0.00");
-        model.addAttribute("totalOrders", 0);
+        model.addAttribute("totalSales", "₹" + totalSales.setScale(2, java.math.RoundingMode.HALF_UP));
+        model.addAttribute("totalOrders", totalOrders);
 
         return "seller/dashboard";
     }
@@ -195,5 +207,28 @@ public class SellerController {
             model.addAttribute("seller", sellerDetails);
             return "seller/profile";
         }
+    }
+
+    @GetMapping("/orders")
+    public String viewOrders(Model model, Principal principal) {
+        SellerProfile seller = getLoggedInSeller(principal);
+        List<OrderItem> orderItems = orderService.getOrderItemsBySeller(seller);
+        model.addAttribute("orderItems", orderItems);
+        return "seller/orders";
+    }
+
+    @PostMapping("/orders/status/{itemId}")
+    public String updateOrderStatus(@PathVariable("itemId") Long itemId,
+                                    @RequestParam("status") OrderStatus status,
+                                    Principal principal,
+                                    RedirectAttributes redirectAttributes) {
+        try {
+            SellerProfile seller = getLoggedInSeller(principal);
+            orderService.updateItemStatus(itemId, status, seller);
+            redirectAttributes.addFlashAttribute("successMessage", "Order item status updated successfully.");
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("error", e.getMessage());
+        }
+        return "redirect:/seller/orders";
     }
 }

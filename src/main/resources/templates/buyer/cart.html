@@ -136,10 +136,9 @@
                     </div>
 
                     <!-- Action buttons -->
-                    <button type="button" class="btn-disabled-custom btn-primary-custom w-100 py-3 mb-2" style="font-size: 15px;" disabled>
-                        🔒 Proceed to Checkout
-                    </button>
-                    <small class="text-muted d-block text-center mb-3" style="font-size: 11px;">Checkout will be implemented in Phase 4</small>
+                    <a th:href="@{/buyer/checkout}" class="btn-primary-custom w-100 py-3 mb-2 text-decoration-none" style="font-size: 15px;">
+                        Proceed to Checkout
+                    </a>
 
                     <a th:href="@{/buyer/dashboard}" class="btn btn-outline-success w-100 py-2" style="border-radius: 10px; font-weight: 600; font-size: 14px; border-color: var(--primary-green); color: var(--primary-green);">
                         🛒 Continue Shopping

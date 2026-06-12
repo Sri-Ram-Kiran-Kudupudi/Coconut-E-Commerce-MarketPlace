@@ -9,6 +9,8 @@ import com.coconut.coconut_marketplace.enums.Role;
 import com.coconut.coconut_marketplace.repository.ProductRepository;
 import com.coconut.coconut_marketplace.repository.SellerProfileRepository;
 import com.coconut.coconut_marketplace.repository.UserRepository;
+import com.coconut.coconut_marketplace.repository.OrderRepository;
+import com.coconut.coconut_marketplace.repository.OrderItemRepository;
 import com.coconut.coconut_marketplace.service.ProductService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -35,6 +37,12 @@ class ProductServiceTests {
     private ProductRepository productRepository;
 
     @Autowired
+    private OrderRepository orderRepository;
+
+    @Autowired
+    private OrderItemRepository orderItemRepository;
+
+    @Autowired
     private ProductService productService;
 
     private SellerProfile seller1;
@@ -43,9 +51,11 @@ class ProductServiceTests {
     @BeforeEach
     void setUp() {
         // Clean database tables
-        productRepository.deleteAll();
-        sellerProfileRepository.deleteAll();
-        userRepository.deleteAll();
+        orderItemRepository.deleteAllInBatch();
+        orderRepository.deleteAllInBatch();
+        productRepository.deleteAllInBatch();
+        sellerProfileRepository.deleteAllInBatch();
+        userRepository.deleteAllInBatch();
 
         // Create Seller 1
         User u1 = User.builder()

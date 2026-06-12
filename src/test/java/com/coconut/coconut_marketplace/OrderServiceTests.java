@@ -56,11 +56,11 @@ class OrderServiceTests {
 
     @BeforeEach
     void setUp() {
-        orderItemRepository.deleteAll();
-        orderRepository.deleteAll();
-        productRepository.deleteAll();
-        sellerProfileRepository.deleteAll();
-        userRepository.deleteAll();
+        orderItemRepository.deleteAllInBatch();
+        orderRepository.deleteAllInBatch();
+        productRepository.deleteAllInBatch();
+        sellerProfileRepository.deleteAllInBatch();
+        userRepository.deleteAllInBatch();
 
         // Create Buyer
         buyer = userRepository.save(User.builder()

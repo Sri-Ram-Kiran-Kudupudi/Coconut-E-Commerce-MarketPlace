@@ -23,6 +23,50 @@
 
         <!-- Metrics Row -->
         <div class="metric-container">
+            <!-- Total Revenue -->
+            <div class="metric-card">
+                <div class="metric-info">
+                    <h5>Total Revenue</h5>
+                    <h2 th:text="${totalSales}">₹0.00</h2>
+                </div>
+                <div class="metric-icon orange">
+                    <span>💰</span>
+                </div>
+            </div>
+
+            <!-- Delivered Revenue -->
+            <div class="metric-card">
+                <div class="metric-info">
+                    <h5>Delivered Revenue</h5>
+                    <h2 th:text="${deliveredSales}">₹0.00</h2>
+                </div>
+                <div class="metric-icon">
+                    <span>✅</span>
+                </div>
+            </div>
+
+            <!-- Pending Revenue -->
+            <div class="metric-card">
+                <div class="metric-info">
+                    <h5>Pending Revenue</h5>
+                    <h2 th:text="${pendingSales}">₹0.00</h2>
+                </div>
+                <div class="metric-icon blue">
+                    <span>⌛</span>
+                </div>
+            </div>
+
+            <!-- Total Orders -->
+            <div class="metric-card">
+                <div class="metric-info">
+                    <h5>Total Orders</h5>
+                    <h2 th:text="${totalOrders}">0</h2>
+                </div>
+                <div class="metric-icon teal">
+                    <span>🛒</span>
+                </div>
+            </div>
+
             <!-- Active Listings -->
             <div class="metric-card">
                 <div class="metric-info">
@@ -44,35 +88,60 @@
                     <span>📦</span>
                 </div>
             </div>
-
-            <!-- Total Orders (Mock) -->
-            <div class="metric-card">
-                <div class="metric-info">
-                    <h5>Total Orders</h5>
-                    <h2 th:text="${totalOrders}">0</h2>
-                </div>
-                <div class="metric-icon blue">
-                    <span>🛒</span>
-                </div>
-            </div>
-
-            <!-- Total Earnings (Mock) -->
-            <div class="metric-card">
-                <div class="metric-info">
-                    <h5>Total Revenue</h5>
-                    <h2 th:text="${totalSales}">₹0.00</h2>
-                </div>
-                <div class="metric-icon orange">
-                    <span>💰</span>
-                </div>
-            </div>
         </div>
 
         <!-- Main Body Grid -->
         <div class="row g-4">
-            <!-- Product Overview Section -->
-            <div class="col-lg-8">
-                <div class="custom-card h-100">
+            <!-- Product & Order Overview Section -->
+            <div class="col-lg-8 d-flex flex-column gap-4">
+                
+                <!-- Recent Orders Table -->
+                <div class="custom-card">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h3 class="m-0" style="font-size: 20px; font-weight: 700;">Recent Orders</h3>
+                        <a th:href="@{/seller/orders}" style="color: var(--primary-green); font-weight: 600; text-decoration: none; font-size: 13px;">Manage All Orders ➔</a>
+                    </div>
+
+                    <!-- Empty State for Orders -->
+                    <div th:if="${#lists.isEmpty(recentOrders)}" class="text-center py-5">
+                        <span style="font-size: 64px; display: block; margin-bottom: 15px;">📦</span>
+                        <h4 class="text-muted mb-2">No Orders Received Yet</h4>
+                        <p class="text-muted" style="max-width: 380px; margin: 0 auto;">When buyers purchase items from your store, they will appear here.</p>
+                    </div>
+
+                    <!-- Table List of Recent Orders -->
+                    <div th:if="${!#lists.isEmpty(recentOrders)}" class="table-responsive">
+                        <table class="table align-middle">
+                            <thead>
+                                <tr style="font-size: 13px; color: var(--text-grey);">
+                                    <th scope="col" style="border-bottom: 1.5px solid var(--border-color);">Order Number</th>
+                                    <th scope="col" style="border-bottom: 1.5px solid var(--border-color);">Buyer Name</th>
+                                    <th scope="col" style="border-bottom: 1.5px solid var(--border-color);">Product Name</th>
+                                    <th scope="col" style="border-bottom: 1.5px solid var(--border-color);">Quantity</th>
+                                    <th scope="col" style="border-bottom: 1.5px solid var(--border-color);">Status</th>
+                                    <th scope="col" style="border-bottom: 1.5px solid var(--border-color);">Order Date</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr th:each="ord : ${recentOrders}" style="font-size: 14px;">
+                                    <td style="border-bottom: 1px solid var(--border-color);">
+                                        <strong class="text-dark" th:text="${ord.order.orderNumber}">COC-20260612-0001</strong>
+                                    </td>
+                                    <td style="border-bottom: 1px solid var(--border-color);" th:text="${ord.order.fullName}">Buyer Name</td>
+                                    <td style="border-bottom: 1px solid var(--border-color);" th:text="${ord.productName}">Product Name</td>
+                                    <td style="border-bottom: 1px solid var(--border-color);" th:text="${ord.quantity}">Quantity</td>
+                                    <td style="border-bottom: 1px solid var(--border-color);">
+                                        <span th:class="'status-badge status-' + ${#strings.toLowerCase(ord.status.name())}" th:text="${ord.status}">Pending</span>
+                                    </td>
+                                    <td style="border-bottom: 1px solid var(--border-color);" th:text="${#temporals.format(ord.createdAt, 'dd MMM yyyy')}">Order Date</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Recent Listings -->
+                <div class="custom-card">
                     <div class="d-flex justify-content-between align-items-center mb-4">
                         <h3 class="m-0" style="font-size: 20px; font-weight: 700;">Recent Listings</h3>
                         <a th:href="@{/seller/products}" style="color: var(--primary-green); font-weight: 600; text-decoration: none; font-size: 13px;">View All Listings ➔</a>
@@ -130,9 +199,32 @@
                 </div>
             </div>
 
-            <!-- Quick Tips / Store Settings -->
-            <div class="col-lg-4">
-                <div class="custom-card h-100 d-flex flex-column justify-content-between">
+            <!-- Sidebar Section (4 columns) -->
+            <div class="col-lg-4 d-flex flex-column gap-4">
+                
+                <!-- Low Stock Alerts Card -->
+                <div class="custom-card" style="border: 1.5px solid #FFCDD2; background-color: #FFF8F8;">
+                    <h3 class="mb-3 d-flex align-items-center gap-2" style="font-size: 18px; font-weight: 700; color: var(--error-red);">
+                        ⚠️ Low Stock Alerts
+                    </h3>
+                    <p class="text-muted mb-3" style="font-size: 12.5px;">Products with 5 or fewer items remaining in stock.</p>
+                    
+                    <!-- Empty State for low stock -->
+                    <div th:if="${#lists.isEmpty(lowStockProducts)}" class="py-2 text-success" style="font-size: 13.5px; font-weight: 600;">
+                        ✅ All products have healthy stock levels!
+                    </div>
+                    
+                    <!-- Low stock list -->
+                    <div th:if="${!#lists.isEmpty(lowStockProducts)}" class="d-flex flex-column gap-2">
+                        <div th:each="prod : ${lowStockProducts}" class="p-2 border-bottom d-flex justify-content-between align-items-center" style="font-size: 13.5px; border-bottom-color: #FFEAEA !important;">
+                            <span th:text="${prod.name}" style="font-weight: 600; color: var(--text-dark);">Product Name</span>
+                            <span class="badge bg-danger text-white px-2 py-1" style="font-size: 11px;" th:text="${prod.stockQuantity + ' left'}">0 left</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Store Profile Info -->
+                <div class="custom-card">
                     <div>
                         <h3 class="mb-3" style="font-size: 20px; font-weight: 700;">Store Profile Info</h3>
                         <hr class="my-3" style="border-color: var(--border-color);">

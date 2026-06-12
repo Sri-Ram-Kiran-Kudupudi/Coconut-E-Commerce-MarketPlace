@@ -134,6 +134,37 @@ public class OrderService {
             return orderItem;
         }
 
+        // Enforce sequential transitions
+        if (currentStatus == OrderStatus.DELIVERED || currentStatus == OrderStatus.CANCELLED) {
+            throw new IllegalStateException("Cannot change status of a closed order item (" + currentStatus + ").");
+        }
+
+        if (currentStatus == OrderStatus.PENDING) {
+            if (newStatus != OrderStatus.CONFIRMED && newStatus != OrderStatus.CANCELLED) {
+                throw new IllegalStateException("Pending items can only transition to Confirmed or Cancelled.");
+            }
+        } else if (currentStatus == OrderStatus.CONFIRMED) {
+            if (newStatus != OrderStatus.SHIPPED && newStatus != OrderStatus.CANCELLED) {
+                throw new IllegalStateException("Confirmed items can only transition to Shipped or Cancelled.");
+            }
+        } else if (currentStatus == OrderStatus.SHIPPED) {
+            if (newStatus != OrderStatus.DELIVERED) {
+                throw new IllegalStateException("Shipped items can only transition to Delivered.");
+            }
+        }
+
+        // Set timestamps
+        java.time.LocalDateTime now = java.time.LocalDateTime.now();
+        if (newStatus == OrderStatus.CONFIRMED) {
+            orderItem.setConfirmedAt(now);
+        } else if (newStatus == OrderStatus.SHIPPED) {
+            orderItem.setShippedAt(now);
+        } else if (newStatus == OrderStatus.DELIVERED) {
+            orderItem.setDeliveredAt(now);
+        } else if (newStatus == OrderStatus.CANCELLED) {
+            orderItem.setCancelledAt(now);
+        }
+
         // If transitioning to CANCELLED, restock the product inventory
         if (newStatus == OrderStatus.CANCELLED) {
             Product product = orderItem.getProduct();
@@ -150,11 +181,98 @@ public class OrderService {
         return orderItemRepository.save(orderItem);
     }
 
+    @Transactional
+    public OrderItem cancelItemByBuyer(Long orderItemId, User buyer) {
+        OrderItem orderItem = orderItemRepository.findById(orderItemId)
+                .orElseThrow(() -> new IllegalArgumentException("Order item not found with ID: " + orderItemId));
+
+        if (!orderItem.getOrder().getBuyer().getId().equals(buyer.getId())) {
+            throw new SecurityException("You do not have permission to modify this order item.");
+        }
+
+        OrderStatus currentStatus = orderItem.getStatus();
+        if (currentStatus != OrderStatus.PENDING && currentStatus != OrderStatus.CONFIRMED) {
+            throw new IllegalStateException("Cannot cancel item once it is shipped or completed.");
+        }
+
+        // Restock inventory
+        Product product = orderItem.getProduct();
+        product.setStockQuantity(product.getStockQuantity() + orderItem.getQuantity());
+        if (product.getStatus() == ProductStatus.OUT_OF_STOCK) {
+            product.setStatus(ProductStatus.ACTIVE);
+        }
+        productRepository.save(product);
+
+        orderItem.setStatus(OrderStatus.CANCELLED);
+        orderItem.setCancelledAt(java.time.LocalDateTime.now());
+        return orderItemRepository.save(orderItem);
+    }
+
+    @Transactional
+    public OrderItem confirmDeliveryByBuyer(Long orderItemId, User buyer) {
+        OrderItem orderItem = orderItemRepository.findById(orderItemId)
+                .orElseThrow(() -> new IllegalArgumentException("Order item not found with ID: " + orderItemId));
+
+        if (!orderItem.getOrder().getBuyer().getId().equals(buyer.getId())) {
+            throw new SecurityException("You do not have permission to modify this order item.");
+        }
+
+        OrderStatus currentStatus = orderItem.getStatus();
+        if (currentStatus != OrderStatus.SHIPPED) {
+            throw new IllegalStateException("Can only confirm delivery for shipped items.");
+        }
+
+        orderItem.setStatus(OrderStatus.DELIVERED);
+        orderItem.setDeliveredAt(java.time.LocalDateTime.now());
+        return orderItemRepository.save(orderItem);
+    }
+
+    public java.util.Map<String, Object> getBuyerStats(User buyer) {
+        List<Order> orders = orderRepository.findByBuyerOrderByCreatedAtDesc(buyer);
+        long totalOrders = orders.size();
+        long activeOrders = 0;
+        long deliveredOrders = 0;
+
+        for (Order o : orders) {
+            boolean hasActive = false;
+            boolean hasDelivered = false;
+            for (OrderItem oi : o.getOrderItems()) {
+                if (oi.getStatus() == OrderStatus.PENDING || oi.getStatus() == OrderStatus.CONFIRMED || oi.getStatus() == OrderStatus.SHIPPED) {
+                    hasActive = true;
+                }
+                if (oi.getStatus() == OrderStatus.DELIVERED) {
+                    hasDelivered = true;
+                }
+            }
+            if (hasActive) {
+                activeOrders++;
+            } else if (hasDelivered) {
+                deliveredOrders++;
+            }
+        }
+
+        java.util.Map<String, Object> stats = new java.util.HashMap<>();
+        stats.put("totalOrders", totalOrders);
+        stats.put("activeOrders", activeOrders);
+        stats.put("deliveredOrders", deliveredOrders);
+        return stats;
+    }
+
     public List<Order> getOrdersByBuyer(User buyer) {
         return orderRepository.findByBuyerOrderByCreatedAtDesc(buyer);
     }
 
     public List<OrderItem> getOrderItemsBySeller(SellerProfile seller) {
         return orderItemRepository.findBySellerOrderByCreatedAtDesc(seller);
+    }
+
+    public Order getOrderById(Long id) {
+        return orderRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Order not found with ID: " + id));
+    }
+
+    public OrderItem getOrderItemById(Long id) {
+        return orderItemRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Order item not found with ID: " + id));
     }
 }

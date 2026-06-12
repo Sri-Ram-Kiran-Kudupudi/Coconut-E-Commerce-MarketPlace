@@ -48,6 +48,18 @@ public class OrderItem {
     @Column(name = "status", nullable = false)
     private OrderStatus status;
 
+    @Column(name = "confirmed_at")
+    private LocalDateTime confirmedAt;
+
+    @Column(name = "shipped_at")
+    private LocalDateTime shippedAt;
+
+    @Column(name = "delivered_at")
+    private LocalDateTime deliveredAt;
+
+    @Column(name = "cancelled_at")
+    private LocalDateTime cancelledAt;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 

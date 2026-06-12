@@ -10,6 +10,8 @@ import com.coconut.coconut_marketplace.enums.Role;
 import com.coconut.coconut_marketplace.repository.ProductRepository;
 import com.coconut.coconut_marketplace.repository.SellerProfileRepository;
 import com.coconut.coconut_marketplace.repository.UserRepository;
+import com.coconut.coconut_marketplace.repository.OrderRepository;
+import com.coconut.coconut_marketplace.repository.OrderItemRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -46,15 +48,23 @@ class BuyerCartTests {
     @Autowired
     private ProductRepository productRepository;
 
+    @Autowired
+    private OrderRepository orderRepository;
+
+    @Autowired
+    private OrderItemRepository orderItemRepository;
+
     private User buyer;
     private Product activeProduct1;
     private Product activeProduct2;
 
     @BeforeEach
     void setUp() {
-        productRepository.deleteAll();
-        sellerProfileRepository.deleteAll();
-        userRepository.deleteAll();
+        orderItemRepository.deleteAllInBatch();
+        orderRepository.deleteAllInBatch();
+        productRepository.deleteAllInBatch();
+        sellerProfileRepository.deleteAllInBatch();
+        userRepository.deleteAllInBatch();
 
         // Create Buyer
         buyer = User.builder()

@@ -12,10 +12,14 @@
             <p class="text-muted">Process and ship customer purchase orders containing your coconut items.</p>
         </div>
 
+        <!-- Success/Error Alerts -->
+        <div th:if="${successMessage}" class="alert alert-success py-2 px-3 mb-4" style="border-radius: 8px;" th:text="${successMessage}"></div>
+        <div th:if="${error}" class="alert alert-danger py-2 px-3 mb-4" style="border-radius: 8px;" th:text="${error}"></div>
+
         <!-- Empty State -->
-        <div th:if="${#lists.isEmpty(orderItems)}" class="custom-card text-center py-5">
+        <div th:if="${#lists.isEmpty(orderItems)}" class="empty-state-card py-5">
             <span style="font-size: 72px; display: block; margin-bottom: 20px;">📦</span>
-            <h2 class="mb-2" style="font-weight: 700; color: var(--text-dark);">No Orders Received</h2>
+            <h2 class="mb-2" style="font-weight: 700; color: var(--text-dark);">No Orders Received Yet</h2>
             <p class="text-muted mb-0" style="max-width: 400px; margin: 0 auto;">When buyers purchase items from your catalog, they will appear here for fulfillment processing.</p>
         </div>
 
@@ -66,57 +70,44 @@
                         </div>
 
                         <!-- Status and Controls Columns -->
-                        <div class="col-md-5" style="border-left: 1px solid var(--border-color); padding-left: 24px; display: flex; flex-direction: column; justify-content: space-between;">
-                            <div>
-                                <h4 class="mb-3" style="font-size: 15px; font-weight: 700; color: var(--text-dark);">Fulfillment Status</h4>
-                                <div class="mb-4">
-                                    <span th:if="${item.status.name() == 'PENDING'}" class="badge bg-warning text-dark" style="font-size: 12px; font-weight: 600; padding: 6px 12px; border-radius: 20px;">Pending Confirmation</span>
-                                    <span th:if="${item.status.name() == 'CONFIRMED'}" class="badge bg-info text-dark" style="font-size: 12px; font-weight: 600; padding: 6px 12px; border-radius: 20px;">Accepted & Confirmed</span>
-                                    <span th:if="${item.status.name() == 'SHIPPED'}" class="badge bg-primary" style="font-size: 12px; font-weight: 600; padding: 6px 12px; border-radius: 20px;">In Transit / Shipped</span>
-                                    <span th:if="${item.status.name() == 'DELIVERED'}" class="badge bg-success" style="font-size: 12px; font-weight: 600; padding: 6px 12px; border-radius: 20px;">Fulfillment Delivered</span>
-                                    <span th:if="${item.status.name() == 'CANCELLED'}" class="badge bg-danger" style="font-size: 12px; font-weight: 600; padding: 6px 12px; border-radius: 20px;">Order Cancelled</span>
-                                </div>
+                        <div class="col-md-5" style="border-left: 1px solid var(--border-color); padding-left: 24px;">
+                            <h4 class="mb-3" style="font-size: 15px; font-weight: 700; color: var(--text-dark);">Fulfillment Status</h4>
+                            <div class="mb-2">
+                                <span class="text-muted" style="font-size: 12.5px; font-weight: 600;">Current Status:</span>
+                                <span th:class="'status-badge status-' + ${#strings.toLowerCase(item.status.name())} + ' ms-1'" th:text="${item.status}">Pending Confirmation</span>
+                            </div>
+                            <div class="mb-3" style="font-size: 12.5px; color: var(--text-grey);">
+                                <span>Updated on: </span>
+                                <strong th:text="${#temporals.format(item.updatedAt, 'dd MMM yyyy, hh:mm a')}">12 Jun 2026, 10:00 AM</strong>
                             </div>
 
-                            <!-- Status update actions -->
-                            <div th:if="${item.status.name() != 'DELIVERED' && item.status.name() != 'CANCELLED'}" class="d-flex flex-column gap-2">
-                                <span class="text-muted" style="font-size: 11.5px; font-weight: 600;">TRANSITION ORDER STATE:</span>
-                                
-                                <div class="d-flex gap-2">
-                                    <!-- Confirm Action -->
-                                    <form th:if="${item.status.name() == 'PENDING'}" th:action="@{/seller/orders/status/{id}(id=${item.id})}" method="post" class="flex-grow-1">
-                                        <input type="hidden" name="status" value="CONFIRMED">
-                                        <button type="submit" class="btn btn-success w-100 py-2" style="border-radius: 8px; font-weight: 600; font-size: 13px;">
-                                            Confirm Order
+                            <!-- Status update actions (Only if not terminal status) -->
+                            <div th:if="${item.status.name() != 'DELIVERED' && item.status.name() != 'CANCELLED'}" class="mt-4 pt-3 border-top">
+                                <form th:action="@{/seller/orders/status/{id}(id=${item.id})}" method="post"
+                                      onsubmit="const sel = this.querySelector('select[name=status]'); if (sel && sel.value === 'CANCELLED') { return confirm('Are you sure you want to cancel this order? Item inventory will be returned to catalog.'); } return true;">
+                                    <label class="text-muted d-block mb-1" style="font-size: 11.5px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Update Status:</label>
+                                    <div class="d-flex gap-2">
+                                        <select name="status" class="form-input py-1.5" style="font-size: 13px; max-width: 180px; appearance: auto; padding: 6px 12px;" required>
+                                            <!-- If Pending -->
+                                            <th:block th:if="${item.status.name() == 'PENDING'}">
+                                                <option value="CONFIRMED">Confirm Order</option>
+                                                <option value="CANCELLED">Cancel Order</option>
+                                            </th:block>
+                                            <!-- If Confirmed -->
+                                            <th:block th:if="${item.status.name() == 'CONFIRMED'}">
+                                                <option value="SHIPPED">Ship Package</option>
+                                                <option value="CANCELLED">Cancel Order</option>
+                                            </th:block>
+                                            <!-- If Shipped -->
+                                            <th:block th:if="${item.status.name() == 'SHIPPED'}">
+                                                <option value="DELIVERED">Deliver Package</option>
+                                            </th:block>
+                                        </select>
+                                        <button type="submit" class="btn-primary-custom py-1.5 px-3" style="font-size: 13px; font-weight: 600; box-shadow: none;">
+                                            Save Status
                                         </button>
-                                    </form>
-
-                                    <!-- Ship Action -->
-                                    <form th:if="${item.status.name() == 'CONFIRMED'}" th:action="@{/seller/orders/status/{id}(id=${item.id})}" method="post" class="flex-grow-1">
-                                        <input type="hidden" name="status" value="SHIPPED">
-                                        <button type="submit" class="btn btn-primary w-100 py-2" style="border-radius: 8px; font-weight: 600; font-size: 13px;">
-                                            Ship Package
-                                        </button>
-                                    </form>
-
-                                    <!-- Deliver Action -->
-                                    <form th:if="${item.status.name() == 'SHIPPED'}" th:action="@{/seller/orders/status/{id}(id=${item.id})}" method="post" class="flex-grow-1">
-                                        <input type="hidden" name="status" value="DELIVERED">
-                                        <button type="submit" class="btn btn-success w-100 py-2" style="border-radius: 8px; font-weight: 600; font-size: 13px; background-color: var(--primary-green); border-color: var(--primary-green);">
-                                            Deliver Package
-                                        </button>
-                                    </form>
-
-                                    <!-- Cancel Action -->
-                                    <form th:action="@{/seller/orders/status/{id}(id=${item.id})}" method="post" 
-                                          onsubmit="return confirm('Are you sure you want to cancel this order? Item inventory will be returned to catalog.');" 
-                                          class="flex-grow-1">
-                                        <input type="hidden" name="status" value="CANCELLED">
-                                        <button type="submit" class="btn btn-outline-danger w-100 py-2" style="border-radius: 8px; font-weight: 600; font-size: 13px;">
-                                            Cancel Order
-                                        </button>
-                                    </form>
-                                </div>
+                                    </div>
+                                </form>
                             </div>
                         </div>
                     </div>

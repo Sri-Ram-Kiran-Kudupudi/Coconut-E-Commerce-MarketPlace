@@ -4,10 +4,12 @@ import com.coconut.coconut_marketplace.dto.CartItemDto;
 import com.coconut.coconut_marketplace.entity.Product;
 import com.coconut.coconut_marketplace.entity.User;
 import com.coconut.coconut_marketplace.entity.Order;
+import com.coconut.coconut_marketplace.entity.OrderItem;
 import com.coconut.coconut_marketplace.enums.Category;
 import com.coconut.coconut_marketplace.enums.ProductStatus;
 import com.coconut.coconut_marketplace.repository.ProductRepository;
 import com.coconut.coconut_marketplace.repository.UserRepository;
+import com.coconut.coconut_marketplace.repository.OrderRepository;
 import com.coconut.coconut_marketplace.service.ProductService;
 import com.coconut.coconut_marketplace.service.OrderService;
 import jakarta.servlet.http.HttpSession;
@@ -31,6 +33,9 @@ public class BuyerController {
 
     @Autowired
     private UserRepository userRepository;
+
+    @Autowired
+    private OrderRepository orderRepository;
 
     @Autowired
     private ProductRepository productRepository;
@@ -247,6 +252,7 @@ public class BuyerController {
     public String showProfile(Model model, Principal principal) {
         User user = getLoggedInUser(principal);
         model.addAttribute("user", user);
+        model.addAttribute("stats", orderService.getBuyerStats(user));
         return "buyer/profile";
     }
 
@@ -288,15 +294,18 @@ public class BuyerController {
                 : BigDecimal.valueOf(50);
         BigDecimal totalAmount = subtotal.add(deliveryCharge);
 
+        List<Order> pastOrders = orderRepository.findByBuyerOrderByCreatedAtDesc(user);
+        Order lastOrder = pastOrders.isEmpty() ? null : pastOrders.get(0);
+
         Order shippingInfo = Order.builder()
                 .fullName(user.getFullName())
                 .email(user.getEmail())
-                .phoneNumber(user.getPhoneNumber() != null ? user.getPhoneNumber() : "")
-                .address(user.getAddress() != null ? user.getAddress() : "")
-                .city("")
-                .district("")
-                .state("")
-                .pincode("")
+                .phoneNumber(lastOrder != null ? lastOrder.getPhoneNumber() : (user.getPhoneNumber() != null ? user.getPhoneNumber() : ""))
+                .address(lastOrder != null ? lastOrder.getAddress() : (user.getAddress() != null ? user.getAddress() : ""))
+                .city(lastOrder != null ? lastOrder.getCity() : "")
+                .district(lastOrder != null ? lastOrder.getDistrict() : "")
+                .state(lastOrder != null ? lastOrder.getState() : "")
+                .pincode(lastOrder != null ? lastOrder.getPincode() : "")
                 .build();
 
         model.addAttribute("cartItems", new ArrayList<>(cart.values()));
@@ -321,6 +330,14 @@ public class BuyerController {
                 return "redirect:/buyer/cart";
             }
 
+            // Persist shipping information back to the buyer's profile
+            buyer.setPhoneNumber(shippingInfo.getPhoneNumber());
+            buyer.setAddress(shippingInfo.getAddress());
+            if (shippingInfo.getFullName() != null && !shippingInfo.getFullName().trim().isEmpty()) {
+                buyer.setFullName(shippingInfo.getFullName());
+            }
+            userRepository.save(buyer);
+
             Order placedOrder = orderService.createOrderFromCart(buyer, new ArrayList<>(cart.values()), shippingInfo);
 
             // Success, clear session cart
@@ -340,6 +357,60 @@ public class BuyerController {
         User buyer = getLoggedInUser(principal);
         List<Order> orders = orderService.getOrdersByBuyer(buyer);
         model.addAttribute("orders", orders);
+        model.addAttribute("stats", orderService.getBuyerStats(buyer));
         return "buyer/orders";
+    }
+
+    @GetMapping("/order/{id}")
+    public String viewOrderDetails(@PathVariable("id") Long id, Model model, Principal principal) {
+        User buyer = getLoggedInUser(principal);
+        Order order = orderService.getOrderById(id);
+        if (!order.getBuyer().getId().equals(buyer.getId())) {
+            throw new SecurityException("You do not have permission to view this order.");
+        }
+        model.addAttribute("order", order);
+        return "buyer/order-details";
+    }
+
+    @PostMapping("/orders/cancel/{itemId}")
+    public String cancelOrderItem(@PathVariable("itemId") Long itemId,
+                                  Principal principal,
+                                  RedirectAttributes redirectAttributes) {
+        Long orderId = null;
+        try {
+            User buyer = getLoggedInUser(principal);
+            OrderItem item = orderService.getOrderItemById(itemId);
+            orderId = item.getOrder().getId();
+
+            orderService.cancelItemByBuyer(itemId, buyer);
+            redirectAttributes.addFlashAttribute("successMessage", "Order item cancelled successfully.");
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("error", e.getMessage());
+        }
+        if (orderId != null) {
+            return "redirect:/buyer/order/" + orderId;
+        }
+        return "redirect:/buyer/orders";
+    }
+
+    @PostMapping("/orders/confirm-delivery/{itemId}")
+    public String confirmOrderItemDelivery(@PathVariable("itemId") Long itemId,
+                                           Principal principal,
+                                           RedirectAttributes redirectAttributes) {
+        Long orderId = null;
+        try {
+            User buyer = getLoggedInUser(principal);
+            OrderItem item = orderService.getOrderItemById(itemId);
+            orderId = item.getOrder().getId();
+
+            orderService.confirmDeliveryByBuyer(itemId, buyer);
+            redirectAttributes.addFlashAttribute("successMessage", "Delivery confirmed successfully.");
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("error", e.getMessage());
+        }
+        if (orderId != null) {
+            return "redirect:/buyer/order/" + orderId;
+        }
+        return "redirect:/buyer/orders";
     }
 }

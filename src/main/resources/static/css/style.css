@@ -416,6 +416,7 @@ h1, h2, h3, h4, h5, h6 {
     display: flex;
     flex-direction: column;
     height: 100%;
+    position: relative;
 }
 
 .product-card:hover {
@@ -447,7 +448,7 @@ h1, h2, h3, h4, h5, h6 {
     transform: scale(1.06);
 }
 
-.status-badge {
+.product-img-wrapper .status-badge {
     position: absolute;
     top: 10px;
     right: 10px;
@@ -458,6 +459,7 @@ h1, h2, h3, h4, h5, h6 {
     text-transform: uppercase;
     letter-spacing: 0.5px;
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    z-index: 5;
 }
 
 .status-active { background: #2E7D32; color: #FFFFFF; }
@@ -740,8 +742,8 @@ h1, h2, h3, h4, h5, h6 {
 /* Custom Cart SVG badge alignment */
 .cart-badge {
     position: absolute;
-    top: -2px;
-    right: -6px;
+    top: -5px;
+    right: -5px;
     background-color: var(--error-red) !important;
     color: white !important;
     font-size: 9px !important;
@@ -762,6 +764,145 @@ h1, h2, h3, h4, h5, h6 {
     .container {
         max-width: 1280px !important;
     }
+}
+
+/* Progress Timeline Stepper */
+.stepper-wrapper {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 25px;
+    margin-bottom: 25px;
+    position: relative;
+}
+
+.stepper-wrapper::before {
+    content: "";
+    position: absolute;
+    top: 25px;
+    left: 0;
+    width: 100%;
+    height: 4px;
+    background-color: #E2E8E2;
+    z-index: 1;
+}
+
+.stepper-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    flex: 1;
+    position: relative;
+    z-index: 2;
+}
+
+.step-counter {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background-color: #E2E8E2;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-weight: 700;
+    color: var(--text-grey);
+    border: 3px solid #FFFFFF;
+    box-shadow: var(--shadow-sm);
+    transition: all 0.3s ease;
+}
+
+.step-name {
+    margin-top: 10px;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text-grey);
+    text-align: center;
+}
+
+.step-date {
+    font-size: 11px;
+    color: var(--text-grey);
+    margin-top: 4px;
+    text-align: center;
+    min-height: 16px;
+    line-height: 1.3;
+}
+
+/* Stepper States */
+.stepper-item.completed .step-counter {
+    background-color: var(--primary-green);
+    color: #FFFFFF;
+}
+
+.stepper-item.completed .step-name {
+    color: var(--primary-green);
+}
+
+.stepper-item.active .step-counter {
+    background-color: #0D6EFD; /* Active Blue */
+    color: #FFFFFF;
+    border-color: #BBDEFB;
+}
+
+.stepper-item.active .step-name {
+    color: #0D6EFD;
+}
+
+/* Specific timeline stepper item widths for responsiveness */
+@media (max-width: 575px) {
+    .stepper-wrapper {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 20px;
+        padding-left: 15px;
+    }
+    .stepper-wrapper::before {
+        left: 38px;
+        top: 0;
+        width: 4px;
+        height: 100%;
+    }
+    .stepper-item {
+        flex-direction: row;
+        gap: 15px;
+        align-items: center;
+        width: 100%;
+    }
+    .step-name {
+        margin-top: 0;
+        text-align: left;
+    }
+    .step-date {
+        margin-top: 2px;
+        text-align: left;
+    }
+}
+
+/* Dynamic State Badges Color Overrides */
+.status-badge {
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    display: inline-block;
+}
+
+.status-pending { background-color: #FFEFC2 !important; color: #EF6C00 !important; border: 1px solid #FFE0B2 !important; }
+.status-confirmed { background-color: #E3F2FD !important; color: #0D6EFD !important; border: 1px solid #BBDEFB !important; }
+.status-shipped { background-color: #F3E5F5 !important; color: #6f42c1 !important; border: 1px solid #E1BEE7 !important; }
+.status-delivered { background-color: #E8F5E9 !important; color: #198754 !important; border: 1px solid #C8E6C9 !important; }
+.status-cancelled { background-color: #FFEBEE !important; color: #dc3545 !important; border: 1px solid #FFCDD2 !important; }
+
+/* Empty State Card */
+.empty-state-card {
+    background: var(--card-bg);
+    border: 1px dashed var(--border-color);
+    border-radius: 16px;
+    padding: 60px 40px;
+    text-align: center;
+    box-shadow: var(--shadow-sm);
 }
 
 

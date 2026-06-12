@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layout/base :: layout(~{::title}, ~{::content})}">
+<head>
+    <title>Order Details - Coconut Marketplace</title>
+</head>
+<body>
+    <div th:fragment="content" class="container py-5">
+        
+        <!-- Navigation Back -->
+        <div class="mb-4">
+            <a th:href="@{/buyer/orders}" class="btn-secondary-custom py-2 px-3" style="font-size: 13.5px;">
+                ← Back to My Orders
+            </a>
+        </div>
+
+        <!-- Success/Error Alerts -->
+        <div th:if="${successMessage}" class="alert alert-success py-2 px-3 mb-4" style="border-radius: 8px;" th:text="${successMessage}"></div>
+        <div th:if="${error}" class="alert alert-danger py-2 px-3 mb-4" style="border-radius: 8px;" th:text="${error}"></div>
+
+        <!-- Order Header -->
+        <div class="custom-card mb-4 p-4">
+            <div class="row align-items-center">
+                <div class="col-md-6">
+                    <span class="text-muted uppercase fw-bold" style="font-size: 11px; letter-spacing: 0.5px;">ORDER TRACKING</span>
+                    <h2 class="mt-1 mb-2 text-dark" style="font-weight: 800;">
+                        Order #<span th:text="${order.orderNumber}">COC-20260612-1234</span>
+                    </h2>
+                    <p class="mb-0 text-muted" style="font-size: 13.5px;">
+                        Placed on <strong th:text="${#temporals.format(order.createdAt, 'dd MMM yyyy, hh:mm a')}">12 Jun 2026</strong>
+                    </p>
+                </div>
+                <div class="col-md-6 text-md-end mt-3 mt-md-0">
+                    <span class="d-inline-block p-3 bg-light border" style="border-radius: 12px; font-size: 14px; text-align: left;">
+                        <span class="text-muted d-block" style="font-size: 11px; font-weight: 600;">TOTAL AMOUNT</span>
+                        <strong class="text-success fw-bold" th:text="${'₹' + order.totalAmount}" style="font-size: 18px;">₹0.00</strong>
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <div class="row g-4">
+            <!-- Order Items (8 columns) -->
+            <div class="col-lg-8">
+                <h3 class="mb-3" style="font-size: 18px; font-weight: 700; color: var(--text-dark);">Items in this Order</h3>
+                
+                <div class="d-flex flex-column gap-4">
+                    <div th:each="item : ${order.orderItems}" class="custom-card p-4">
+                        <div class="d-flex align-items-center gap-3 pb-3 border-bottom mb-3">
+                            <!-- Thumbnail Image -->
+                            <div style="width: 55px; height: 55px; background: #F8FAF8; border-radius: 10px; display: flex; align-items: center; justify-content: center; padding: 4px; border: 1px solid var(--border-color); flex-shrink: 0;">
+                                <img th:src="${item.product.imageUrl}" alt="Product Image" style="max-width: 100%; max-height: 100%; object-fit: contain;">
+                            </div>
+                            
+                            <!-- Product metadata -->
+                            <div class="flex-grow-1 min-width-0">
+                                <h4 th:text="${item.productName}" class="mb-1 text-dark" style="font-weight: 700; font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Product Name</h4>
+                                <p class="text-muted mb-0" style="font-size: 12px;">
+                                    Seller: <span th:text="${item.seller.storeName}" style="color: var(--primary-green); font-weight: 600;">Store</span>
+                                </p>
+                            </div>
+                            
+                            <!-- Pricing and Status -->
+                            <div class="text-end">
+                                <strong class="text-dark d-block" th:text="${'₹' + item.totalPrice}">₹0.00</strong>
+                                <span class="text-muted d-block" style="font-size: 11.5px;" th:text="${item.quantity + ' × ₹' + item.price}">1 × ₹0.00</span>
+                            </div>
+                        </div>
+
+                        <!-- Status badge -->
+                        <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+                            <div>
+                                <span class="text-muted" style="font-size: 12.5px; font-weight: 600;">Item Status:</span>
+                                <span th:class="'status-badge status-' + ${#strings.toLowerCase(item.status.name())} + ' ms-1'" th:text="${item.status}">Pending</span>
+                            </div>
+                            
+                            <!-- Contextual Actions for Buyer -->
+                            <div>
+                                <!-- Cancel Item Form (Only if Pending or Confirmed) -->
+                                <form th:if="${item.status.name() == 'PENDING' || item.status.name() == 'CONFIRMED'}" 
+                                      th:action="@{/buyer/orders/cancel/{id}(id=${item.id})}" 
+                                      method="post" 
+                                      onsubmit="return confirm('Are you sure you want to cancel this item?');" 
+                                      style="display: inline-block;">
+                                    <button type="submit" class="btn btn-outline-danger py-1 px-3" style="font-size: 12.5px; border-radius: 8px; font-weight: 600;">
+                                        Cancel Item
+                                    </button>
+                                </form>
+
+                                <!-- Confirm Delivery Form (Only if Shipped) -->
+                                <form th:if="${item.status.name() == 'SHIPPED'}" 
+                                      th:action="@{/buyer/orders/confirm-delivery/{id}(id=${item.id})}" 
+                                      method="post" 
+                                      onsubmit="return confirm('Have you received this package? Confirming delivery completes the order item.');" 
+                                      style="display: inline-block;">
+                                    <button type="submit" class="btn btn-success py-1 px-3" style="font-size: 12.5px; border-radius: 8px; font-weight: 600; background-color: var(--primary-green); border-color: var(--primary-green);">
+                                        Confirm Delivery Received
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+
+                        <!-- Visual Progress timeline stepper -->
+                        <div class="stepper-wrapper mt-4">
+                            <!-- Ordered Step -->
+                            <div class="stepper-item completed">
+                                <div class="step-counter">✓</div>
+                                <div class="step-name">Ordered</div>
+                                <div class="step-date" th:text="${#temporals.format(item.createdAt, 'dd MMM yyyy, hh:mm a')}">Ordered At</div>
+                            </div>
+                            
+                            <th:block th:if="${item.status.name() != 'CANCELLED'}">
+                                <!-- Confirmed Step -->
+                                <div th:class="'stepper-item ' + (${item.confirmedAt != null} ? 'completed' : '') + (${item.status.name() == 'PENDING'} ? 'active' : '')">
+                                    <div class="step-counter" th:text="${item.confirmedAt != null ? '✓' : '2'}">2</div>
+                                    <div class="step-name">Confirmed</div>
+                                    <div class="step-date" th:text="${item.confirmedAt != null ? #temporals.format(item.confirmedAt, 'dd MMM yyyy, hh:mm a') : 'Pending'}">Pending</div>
+                                </div>
+                                <!-- Shipped Step -->
+                                <div th:class="'stepper-item ' + (${item.shippedAt != null} ? 'completed' : '') + (${item.status.name() == 'CONFIRMED'} ? 'active' : '')">
+                                    <div class="step-counter" th:text="${item.shippedAt != null ? '✓' : '3'}">3</div>
+                                    <div class="step-name">Shipped</div>
+                                    <div class="step-date" th:text="${item.shippedAt != null ? #temporals.format(item.shippedAt, 'dd MMM yyyy, hh:mm a') : 'Pending'}">Pending</div>
+                                </div>
+                                <!-- Delivered Step -->
+                                <div th:class="'stepper-item ' + (${item.deliveredAt != null} ? 'completed' : '') + (${item.status.name() == 'SHIPPED'} ? 'active' : '')">
+                                    <div class="step-counter" th:text="${item.deliveredAt != null ? '✓' : '4'}">4</div>
+                                    <div class="step-name">Delivered</div>
+                                    <div class="step-date" th:text="${item.deliveredAt != null ? #temporals.format(item.deliveredAt, 'dd MMM yyyy, hh:mm a') : 'Pending'}">Pending</div>
+                                </div>
+                            </th:block>
+
+                            <th:block th:if="${item.status.name() == 'CANCELLED'}">
+                                <!-- Cancelled Step -->
+                                <div class="stepper-item cancelled">
+                                    <div class="step-counter" style="background-color: var(--error-red); color: white; border-color: #FFCDD2;">✕</div>
+                                    <div class="step-name" style="color: var(--error-red);">Cancelled</div>
+                                    <div class="step-date text-danger" th:text="${item.cancelledAt != null ? #temporals.format(item.cancelledAt, 'dd MMM yyyy, hh:mm a') : ''}">Cancelled At</div>
+                                </div>
+                            </th:block>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sidebars: Shipping Address and Payment Info (4 columns) -->
+            <div class="col-lg-4">
+                <div class="d-flex flex-column gap-4">
+                    
+                    <!-- Shipping summary -->
+                    <div class="custom-card p-4">
+                        <h4 class="mb-3" style="font-size: 16px; font-weight: 700; color: var(--text-dark);">Delivery Address</h4>
+                        <div style="font-size: 13.5px; line-height: 1.6; color: var(--text-grey);">
+                            <strong th:text="${order.fullName}" style="color: var(--text-dark); display: block; margin-bottom: 6px; font-size: 14.5px;">John Doe</strong>
+                            <span th:text="${order.address}" style="display: block; margin-bottom: 2px;">123 Street</span>
+                            <span th:text="${order.city + ', ' + order.district}" style="display: block; margin-bottom: 2px;">City, District</span>
+                            <span th:text="${order.state + ' - ' + order.pincode}" style="display: block; margin-bottom: 6px;">State - Pincode</span>
+                            <span class="d-block mt-2">📞 <strong>Phone:</strong> <span th:text="${order.phoneNumber}">9876543210</span></span>
+                            <span class="d-block">📧 <strong>Email:</strong> <span th:text="${order.email}">email@example.com</span></span>
+                        </div>
+                    </div>
+
+                    <!-- Payment summary -->
+                    <div class="custom-card p-4">
+                        <h4 class="mb-3" style="font-size: 16px; font-weight: 700; color: var(--text-dark);">Billing Summary</h4>
+                        <table class="w-100" style="font-size: 13.5px; border-collapse: separate; border-spacing: 0 10px;">
+                            <tr>
+                                <td class="text-muted">Payment Method:</td>
+                                <td class="text-end text-dark fw-bold" th:text="${order.paymentMethod}">COD</td>
+                            </tr>
+                            <tr>
+                                <td class="text-muted">Payment Status:</td>
+                                <td class="text-end">
+                                    <span class="badge bg-warning text-dark px-2 py-1" style="font-size: 11px; border-radius: 8px;" th:text="${order.paymentStatus}">PENDING</span>
+                                </td>
+                            </tr>
+                            <tr style="border-top: 1px solid var(--border-color);">
+                                <td class="text-muted pt-2">Subtotal:</td>
+                                <td class="text-end text-dark pt-2" th:text="${'₹' + order.subtotal}">₹0.00</td>
+                            </tr>
+                            <tr>
+                                <td class="text-muted">Delivery Charge:</td>
+                                <td class="text-end text-dark" th:text="${order.deliveryCharge == 0 ? 'FREE' : '₹' + order.deliveryCharge}">₹0.00</td>
+                            </tr>
+                            <tr style="border-top: 1.5px solid var(--border-color);">
+                                <td class="pt-2" style="font-weight: 700; color: var(--text-dark);">Total Price:</td>
+                                <td class="text-end text-success pt-2" style="font-weight: 800; font-size: 16px;" th:text="${'₹' + order.totalAmount}">₹0.00</td>
+                            </tr>
+                        </table>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+    </div>
+</body>
+</html>

@@ -23,6 +23,15 @@ import java.math.BigDecimal;
 import java.security.Principal;
 import java.util.Arrays;
 import java.util.List;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.LinkedHashSet;
+import java.util.Set;
+import java.io.File;
+import java.io.IOException;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
+import org.springframework.core.io.support.ResourcePatternResolver;
 
 @Controller
 @RequestMapping("/seller")
@@ -43,24 +52,76 @@ public class SellerController {
     @Autowired
     private OrderItemRepository orderItemRepository;
 
+    @Autowired
+    private com.coconut.coconut_marketplace.repository.ProductRepository productRepository;
+
     // List of predefined product images under static folder
-    private static final List<String> PREDEFINED_IMAGES = Arrays.asList(
-            "/css/images/products/coconut.png",
-            "/css/images/products/tender_coconut.png",
-            "/css/images/products/coconut_flesh.png",
-            "/css/images/products/sprouted_coconut.png",
-            "/css/images/products/coconut_oil.png",
-            "/css/images/products/coconut_water.png",
-            "/css/images/products/coconut_milk.png",
-            "/css/images/products/coconut_sapling.png",
-            "/css/images/products/hybrid_coconut_sapling..png",
-            "/css/images/products/coir_rope.png",
-            "/css/images/products/coconut_husk.png",
-            "/css/images/products/coconut_broom.png",
-            "/css/images/products/coconut_shell.png",
-            "/css/images/products/coconut_shell_charcoal.png",
-            "/css/images/products/coconut_flower.png"
-    );
+    private List<String> getDynamicImages() {
+        Set<String> images = new LinkedHashSet<>();
+
+        // 1. Try resolving from local development filesystem (to support instant reloading in local dev)
+        String[] relativePaths = {
+            "src/main/resources/static/css/images/products",
+            "src/main/resources/static/images/products"
+        };
+        for (String relPath : relativePaths) {
+            File dir = new File(relPath);
+            if (dir.exists() && dir.isDirectory()) {
+                File[] files = dir.listFiles();
+                if (files != null) {
+                    for (File file : files) {
+                        if (file.isFile() && isImageFile(file.getName())) {
+                            String webPath = relPath.substring("src/main/resources/static".length()) + "/" + file.getName();
+                            images.add(webPath.replace('\\', '/'));
+                        }
+                    }
+                }
+            }
+        }
+
+        // 2. Try resolving from classpath pattern (for standard Spring/production execution)
+        String[] classpathPatterns = {
+            "classpath:/static/css/images/products/*",
+            "classpath:/static/images/products/*"
+        };
+        ResourcePatternResolver resolver = new PathMatchingResourcePatternResolver();
+        for (String pattern : classpathPatterns) {
+            try {
+                Resource[] resources = resolver.getResources(pattern);
+                for (Resource resource : resources) {
+                    String filename = resource.getFilename();
+                    if (filename != null && isImageFile(filename)) {
+                        String prefix = pattern.replace("classpath:/static", "").replace("*", "");
+                        images.add(prefix + filename);
+                    }
+                }
+            } catch (IOException e) {
+                // Ignore pattern match failure
+            }
+        }
+
+        // If nothing was found, return a default fallback list so the app doesn't break
+        if (images.isEmpty()) {
+            return Arrays.asList(
+                "/css/images/products/coconut.png",
+                "/css/images/products/tender_coconut.png",
+                "/css/images/products/coconut_oil.png",
+                "/css/images/products/coconut_water.png",
+                "/css/images/products/coconut_milk.png",
+                "/css/images/products/coconut_sapling.png"
+            );
+        }
+
+        List<String> sortedImages = new ArrayList<>(images);
+        Collections.sort(sortedImages);
+        return sortedImages;
+    }
+
+    private boolean isImageFile(String filename) {
+        String lower = filename.toLowerCase();
+        return lower.endsWith(".png") || lower.endsWith(".jpg") || lower.endsWith(".jpeg") 
+            || lower.endsWith(".webp") || lower.endsWith(".gif") || lower.endsWith(".svg");
+    }
 
     private SellerProfile getLoggedInSeller(Principal principal) {
         if (principal == null) {
@@ -78,15 +139,33 @@ public class SellerController {
         SellerProfile seller = getLoggedInSeller(principal);
         List<Product> products = productService.getProductsBySeller(seller);
 
+        BigDecimal totalRevenue = orderItemRepository.sumRevenueBySellerAndStatusNot(seller, OrderStatus.CANCELLED);
+        BigDecimal deliveredRevenue = orderItemRepository.sumDeliveredRevenueBySeller(seller);
+        BigDecimal pendingRevenue = orderItemRepository.sumPendingRevenueBySeller(seller);
+
         long totalOrders = orderItemRepository.countDistinctOrdersBySeller(seller);
-        BigDecimal totalSales = orderItemRepository.sumRevenueBySellerAndStatusNot(seller, OrderStatus.CANCELLED);
+        long pendingOrders = orderItemRepository.countBySellerAndStatus(seller, OrderStatus.PENDING);
+        long shippedOrders = orderItemRepository.countBySellerAndStatus(seller, OrderStatus.SHIPPED);
+        long deliveredOrders = orderItemRepository.countBySellerAndStatus(seller, OrderStatus.DELIVERED);
+
+        List<OrderItem> recentOrders = orderItemRepository.findTop5BySellerOrderByCreatedAtDesc(seller);
+        List<Product> lowStockProducts = productRepository.findBySellerAndStockQuantityLessThanEqualAndStatusNotOrderByStockQuantityAsc(seller, 5, ProductStatus.DISABLED);
 
         model.addAttribute("seller", seller);
         model.addAttribute("products", products);
         model.addAttribute("totalProducts", productService.getProductCountBySeller(seller));
         model.addAttribute("activeProducts", productService.getActiveProductCountBySeller(seller));
-        model.addAttribute("totalSales", "₹" + totalSales.setScale(2, java.math.RoundingMode.HALF_UP));
+        
+        model.addAttribute("totalSales", "₹" + totalRevenue.setScale(2, java.math.RoundingMode.HALF_UP));
+        model.addAttribute("deliveredSales", "₹" + deliveredRevenue.setScale(2, java.math.RoundingMode.HALF_UP));
+        model.addAttribute("pendingSales", "₹" + pendingRevenue.setScale(2, java.math.RoundingMode.HALF_UP));
+        
         model.addAttribute("totalOrders", totalOrders);
+        model.addAttribute("pendingOrders", pendingOrders);
+        model.addAttribute("shippedOrders", shippedOrders);
+        model.addAttribute("deliveredOrders", deliveredOrders);
+        model.addAttribute("recentOrders", recentOrders);
+        model.addAttribute("lowStockProducts", lowStockProducts);
 
         return "seller/dashboard";
     }
@@ -105,7 +184,7 @@ public class SellerController {
         
         model.addAttribute("product", new Product());
         model.addAttribute("categories", Category.values());
-        model.addAttribute("images", PREDEFINED_IMAGES);
+        model.addAttribute("images", getDynamicImages());
         model.addAttribute("isEdit", false);
         return "seller/product-form";
     }
@@ -124,7 +203,7 @@ public class SellerController {
             model.addAttribute("error", e.getMessage());
             model.addAttribute("product", product);
             model.addAttribute("categories", Category.values());
-            model.addAttribute("images", PREDEFINED_IMAGES);
+            model.addAttribute("images", getDynamicImages());
             model.addAttribute("isEdit", false);
             return "seller/product-form";
         }
@@ -137,7 +216,7 @@ public class SellerController {
 
         model.addAttribute("product", product);
         model.addAttribute("categories", Category.values());
-        model.addAttribute("images", PREDEFINED_IMAGES);
+        model.addAttribute("images", getDynamicImages());
         model.addAttribute("isEdit", true);
         return "seller/product-form";
     }
@@ -157,7 +236,7 @@ public class SellerController {
             model.addAttribute("error", e.getMessage());
             model.addAttribute("product", product);
             model.addAttribute("categories", Category.values());
-            model.addAttribute("images", PREDEFINED_IMAGES);
+            model.addAttribute("images", getDynamicImages());
             model.addAttribute("isEdit", true);
             return "seller/product-form";
         }

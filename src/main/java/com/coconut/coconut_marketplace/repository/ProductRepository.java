@@ -19,4 +19,5 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
     List<Product> findByStatusAndCategoryAndNameContainingIgnoreCaseOrderByCreatedAtDesc(ProductStatus status, Category category, String name);
     long countBySeller(SellerProfile seller);
     long countBySellerAndStatus(SellerProfile seller, ProductStatus status);
+    List<Product> findBySellerAndStockQuantityLessThanEqualAndStatusNotOrderByStockQuantityAsc(SellerProfile seller, Integer threshold, ProductStatus status);
 }

@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layout/base :: layout(~{::title}, ~{::content})}">
+<head>
+    <title>Manage Products - Coconut Marketplace</title>
+</head>
+<body>
+    <div th:fragment="content" class="container py-5">
+        
+        <!-- Header Section -->
+        <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+            <div>
+                <h1 class="page-h1 mb-1">My Products Catalog</h1>
+                <p class="text-muted">Manage your product pricing, description, stock levels, and toggle listing visibility.</p>
+            </div>
+            <div>
+                <a th:href="@{/seller/products/new}" class="btn-primary-custom">
+                    <span>➕</span> Add New Product
+                </a>
+            </div>
+        </div>
+
+        <!-- Empty State -->
+        <div th:if="${#lists.isEmpty(products)}" class="custom-card text-center py-5">
+            <span style="font-size: 72px; display: block; margin-bottom: 20px;">📦</span>
+            <h2 class="mb-2" style="font-weight: 700; color: var(--text-dark);">No Products Found</h2>
+            <p class="text-muted mb-4" style="max-width: 420px; margin: 0 auto 20px;">You haven't listed any items in your catalog yet. Start uploading your products to reach active buyers.</p>
+            <a th:href="@{/seller/products/new}" class="btn-primary-custom">
+                Add Your First Product
+            </a>
+        </div>
+
+        <!-- Products Grid -->
+        <div th:if="${!#lists.isEmpty(products)}" class="product-grid">
+            <div th:each="prod : ${products}" class="product-card">
+                
+                <!-- Product Image Wrapper with Status Badge -->
+                <div class="product-img-wrapper">
+                    <img th:src="${prod.imageUrl}" alt="Product Image">
+                    
+                    <!-- Status Badge -->
+                    <span th:if="${prod.status.name() == 'ACTIVE'}" class="status-badge status-active">Active</span>
+                    <span th:if="${prod.status.name() == 'OUT_OF_STOCK'}" class="status-badge status-out-of-stock">Out of Stock</span>
+                    <span th:if="${prod.status.name() == 'DISABLED'}" class="status-badge status-disabled">Disabled</span>
+                </div>
+
+                <!-- Product Details -->
+                <div class="product-details">
+                    <span class="product-cat" th:text="${prod.category.displayName}">Category</span>
+                    <h3 class="product-title" th:text="${prod.name}">Product Name</h3>
+                    <p class="product-desc" th:text="${prod.description}">Description text details goes here...</p>
+                    
+                    <!-- Price and Stock Row -->
+                    <div class="product-price-row">
+                        <div>
+                            <span class="price-lbl d-block">Price</span>
+                            <span class="price-val" th:text="${'₹' + prod.price}">₹0.00</span>
+                        </div>
+                        <div class="text-end">
+                            <span class="price-lbl d-block">Stock Available</span>
+                            <span th:class="${prod.stockQuantity <= 5 && prod.stockQuantity > 0} ? 'stock-lvl low' : 'stock-lvl good'" 
+                                  th:text="${prod.stockQuantity + (prod.stockQuantity == 0 ? ' (Out)' : ' units')}">0 units</span>
+                        </div>
+                    </div>
+
+                    <!-- Button Action Group -->
+                    <div class="product-btn-group">
+                        <!-- Edit Button -->
+                        <a th:href="@{/seller/products/edit/{id}(id=${prod.id})}" class="btn btn-outline-success py-2" style="border-radius: 8px; font-weight: 600; border-width: 1.5px; font-size: 13.5px;">
+                            ✏️ Edit
+                        </a>
+
+                        <!-- Delete Button triggering a secure form -->
+                        <form th:action="@{/seller/products/delete/{id}(id=${prod.id})}" method="post" 
+                              onsubmit="return confirm('Are you sure you want to delete this product? This action cannot be undone.');" 
+                              class="d-inline">
+                            <button type="submit" class="btn btn-outline-danger w-100 py-2" style="border-radius: 8px; font-weight: 600; border-width: 1.5px; font-size: 13.5px;">
+                                🗑️ Delete
+                            </button>
+                        </form>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+    </div>
+</body>
+</html>

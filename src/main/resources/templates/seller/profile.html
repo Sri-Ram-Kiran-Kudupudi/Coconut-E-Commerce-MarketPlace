@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layout/base :: layout(~{::title}, ~{::content})}">
+<head>
+    <title>Store Profile - Coconut Marketplace</title>
+</head>
+<body>
+    <div th:fragment="content" class="container py-5">
+        
+        <!-- Header -->
+        <div class="mb-4">
+            <h1 class="page-h1 mb-1">Store Settings</h1>
+            <p class="text-muted">Configure store details and location settings for billing and logistics.</p>
+        </div>
+
+        <div class="row g-4">
+            <!-- Left Info Panel -->
+            <div class="col-lg-4">
+                <div class="custom-card text-center mb-4">
+                    <span style="font-size: 72px; display: block; margin-bottom: 15px;">🏬</span>
+                    <h3 th:text="${seller.storeName}" class="mb-2" style="font-weight: 700;">My Store Name</h3>
+                    <span class="badge bg-success mb-3" style="font-size: 12px; font-weight: 600; padding: 6px 12px; border-radius: 20px;">Verified Seller</span>
+                    
+                    <p th:text="${seller.storeDescription}" class="text-muted text-center mb-4" style="font-size: 13.5px; line-height: 1.6;">
+                        No description set. Tell buyers about your store's harvest and products.
+                    </p>
+
+                    <div class="text-start p-3 bg-light rounded-3" style="font-size: 13px; border: 1px solid var(--border-color);">
+                        <div class="mb-2">
+                            <strong>Registered Owner:</strong> <span th:text="${seller.user.fullName}">Owner Name</span>
+                        </div>
+                        <div>
+                            <strong>Email Address:</strong> <span th:text="${seller.user.email}">owner@example.com</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Form Edit Panel -->
+            <div class="col-lg-8">
+                <div class="custom-card">
+                    <h3 class="mb-4" style="font-weight: 700; border-bottom: 1.5px solid var(--border-color); padding-bottom: 12px;">Edit Store Information</h3>
+                    
+                    <!-- Form messages -->
+                    <div th:if="${error}" class="alert alert-danger py-2 px-3 mb-4" style="font-size: 13.5px; border-radius: 8px;" th:text="${error}">
+                        Failed to save profile.
+                    </div>
+
+                    <form th:action="@{/seller/profile}" method="post" class="needs-validation" novalidate id="profile-form">
+                        
+                        <!-- Store Name & Description -->
+                        <div class="mb-3">
+                            <label for="storeName" class="form-label" style="font-weight: 600; color: var(--text-dark);">Store Name</label>
+                            <input type="text" name="storeName" id="storeName" class="form-input" th:value="${seller.storeName}" 
+                                   placeholder="Coconut Harvest Enterprise" minlength="2" maxlength="150" required>
+                            <div class="invalid-feedback">Please enter your Store Name (at least 2 characters).</div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label for="storeDescription" class="form-label" style="font-weight: 600; color: var(--text-dark);">Store Description</label>
+                            <textarea name="storeDescription" id="storeDescription" class="form-input" rows="4" 
+                                      placeholder="Provide details about your store, locations, products, and farming practices..." 
+                                      minlength="10" th:text="${seller.storeDescription}" required></textarea>
+                            <div class="invalid-feedback">Store description must be at least 10 characters long.</div>
+                        </div>
+
+                        <h3 class="mb-3 mt-4" style="font-weight: 700; border-bottom: 1.5px solid var(--border-color); padding-bottom: 12px;">Location & Address</h3>
+
+                        <!-- Street Address -->
+                        <div class="mb-3">
+                            <label for="address" class="form-label" style="font-weight: 600; color: var(--text-dark);">Store / Farm Address</label>
+                            <input type="text" name="address" id="address" class="form-input" th:value="${seller.address}" 
+                                   placeholder="e.g. 123 Coconut Grove, East Coast Road" required>
+                            <div class="invalid-feedback">Please enter the street address.</div>
+                        </div>
+
+                        <div class="row">
+                            <!-- City -->
+                            <div class="col-md-6 mb-3">
+                                <label for="city" class="form-label" style="font-weight: 600; color: var(--text-dark);">City / Town</label>
+                                <input type="text" name="city" id="city" class="form-input" th:value="${seller.city}" 
+                                       placeholder="e.g. Pollachi" required>
+                                <div class="invalid-feedback">Please enter the city/town name.</div>
+                            </div>
+
+                            <!-- District -->
+                            <div class="col-md-6 mb-3">
+                                <label for="district" class="form-label" style="font-weight: 600; color: var(--text-dark);">District</label>
+                                <input type="text" name="district" id="district" class="form-input" th:value="${seller.district}" 
+                                       placeholder="e.g. Coimbatore" required>
+                                <div class="invalid-feedback">Please enter the district.</div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <!-- State -->
+                            <div class="col-md-6 mb-3">
+                                <label for="state" class="form-label" style="font-weight: 600; color: var(--text-dark);">State</label>
+                                <input type="text" name="state" id="state" class="form-input" th:value="${seller.state}" 
+                                       placeholder="e.g. Tamil Nadu" required>
+                                <div class="invalid-feedback">Please enter the state.</div>
+                            </div>
+
+                            <!-- Pincode -->
+                            <div class="col-md-6 mb-4">
+                                <label for="pincode" class="form-label" style="font-weight: 600; color: var(--text-dark);">Pincode / Postal Code</label>
+                                <input type="text" name="pincode" id="pincode" class="form-input" th:value="${seller.pincode}" 
+                                       placeholder="e.g. 642001" pattern="\d{5,10}" required>
+                                <div class="invalid-feedback">Please enter a valid pincode (5 to 10 digits).</div>
+                            </div>
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div class="pt-2">
+                            <button type="submit" class="btn-primary-custom w-100 py-3" style="font-size: 16px;">
+                                Save Profile Settings
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <script>
+            // Client-side Bootstrap validation
+            (() => {
+                'use strict'
+                const form = document.getElementById('profile-form');
+                form.addEventListener('submit', event => {
+                    if (!form.checkValidity()) {
+                        event.preventDefault();
+                        event.stopPropagation();
+                    }
+                    form.classList.add('was-validated');
+                }, false);
+            })();
+        </script>
+
+    </div>
+</body>
+</html>

@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layout/base :: layout(~{::title}, ~{::content})}">
+<head>
+    <title th:text="${isEdit} ? 'Edit Product - Coconut Marketplace' : 'Add Product - Coconut Marketplace'">Add Product - Coconut Marketplace</title>
+</head>
+<body>
+    <div th:fragment="content" class="container py-5">
+        <div class="row justify-content-center">
+            <div class="col-lg-8">
+                <!-- Back Link -->
+                <div class="mb-3">
+                    <a th:href="@{/seller/products}" class="text-success text-decoration-none" style="font-weight: 600;">
+                        ← Back to Products List
+                    </a>
+                </div>
+
+                <div class="custom-card shadow-sm">
+                    <div class="mb-4 pb-3" style="border-bottom: 1.5px solid var(--border-color);">
+                        <h2 class="mt-0" style="font-weight: 700; color: var(--text-dark);" 
+                            th:text="${isEdit} ? 'Edit Product Listing' : 'Add New Product Listing'">Add New Product</h2>
+                        <p class="text-muted" th:text="${isEdit} ? 'Modify details of your existing listed item' : 'Fill in the information below to add a new product to the marketplace.'">
+                            Fill in the details to list a new item.
+                        </p>
+                    </div>
+
+                    <!-- Alert message for errors -->
+                    <div th:if="${error}" class="alert alert-danger py-2 px-3 mb-4" style="font-size: 13.5px; border-radius: 8px;" th:text="${error}">
+                        Failed to save product.
+                    </div>
+
+                    <form th:action="${isEdit} ? @{/seller/products/edit/{id}(id=${product.id})} : @{/seller/products/new}" 
+                          method="post" class="needs-validation" novalidate id="product-form">
+                        
+                        <div class="row">
+                            <!-- Product Name -->
+                            <div class="col-md-6 mb-3">
+                                <label for="name" class="form-label" style="font-weight: 600; color: var(--text-dark);">Product Name</label>
+                                <input type="text" name="name" id="name" class="form-input" th:value="${product.name}" 
+                                       placeholder="e.g. Organic Tender Coconut" minlength="2" maxlength="150" required>
+                                <div class="invalid-feedback">Please enter a valid product name (2-150 characters).</div>
+                            </div>
+
+                            <!-- Category -->
+                            <div class="col-md-6 mb-3">
+                                <label for="category" class="form-label" style="font-weight: 600; color: var(--text-dark);">Product Category</label>
+                                <select name="category" id="category" class="form-input" style="appearance: auto;" required>
+                                    <option value="" disabled th:selected="${product.category == null}">-- Select Category --</option>
+                                    <option th:each="cat : ${categories}" 
+                                            th:value="${cat.name()}" 
+                                            th:text="${cat.displayName}" 
+                                            th:selected="${product.category == cat}">Fresh Coconut</option>
+                                </select>
+                                <div class="invalid-feedback">Please select a category.</div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <!-- Price -->
+                            <div class="col-md-6 mb-3">
+                                <label for="price" class="form-label" style="font-weight: 600; color: var(--text-dark);">Price (in ₹)</label>
+                                <input type="number" name="price" id="price" class="form-input" th:value="${product.price}" 
+                                       placeholder="50.00" min="0.01" step="0.01" required>
+                                <div class="invalid-feedback">Price must be greater than zero.</div>
+                            </div>
+
+                            <!-- Stock -->
+                            <div class="col-md-6 mb-3">
+                                <label for="stockQuantity" class="form-label" style="font-weight: 600; color: var(--text-dark);">Stock Quantity</label>
+                                <input type="number" name="stockQuantity" id="stockQuantity" class="form-input" th:value="${product.stockQuantity}" 
+                                       placeholder="100" min="0" required>
+                                <div class="invalid-feedback">Stock quantity cannot be negative.</div>
+                            </div>
+                        </div>
+
+                        <!-- Status (Only displayed when editing) -->
+                        <div th:if="${isEdit}" class="mb-3">
+                            <label for="status" class="form-label" style="font-weight: 600; color: var(--text-dark);">Listing Status</label>
+                            <select name="status" id="status" class="form-input" style="appearance: auto;" required>
+                                <option value="ACTIVE" th:selected="${product.status.name() == 'ACTIVE' || product.status.name() == 'OUT_OF_STOCK'}">Active (Available for purchase, subject to stock)</option>
+                                <option value="DISABLED" th:selected="${product.status.name() == 'DISABLED'}">Disabled (Temporarily hide from store)</option>
+                            </select>
+                            <div class="invalid-feedback">Please select a status.</div>
+                            <small class="text-muted mt-1 d-block">Note: If status is set to Active and stock is 0, the system automatically marks it as Out of Stock.</small>
+                        </div>
+
+                        <!-- Product Description -->
+                        <div class="mb-3">
+                            <label for="description" class="form-label" style="font-weight: 600; color: var(--text-dark);">Detailed Description</label>
+                            <textarea name="description" id="description" class="form-input" rows="4" 
+                                      placeholder="Describe the quality, size, source, and options for this coconut product..." 
+                                      minlength="10" th:text="${product.description}" required></textarea>
+                            <div class="invalid-feedback">Description must be at least 10 characters long.</div>
+                        </div>
+
+                        <!-- Select Product Image Visual Grid -->
+                        <div class="mb-4">
+                            <label class="form-label" style="font-weight: 600; color: var(--text-dark);">Select Product Image</label>
+                            <input type="hidden" name="imageUrl" id="imageUrl" th:value="${product.imageUrl}" required>
+                            
+                            <div class="image-selector-grid">
+                                <div th:each="img : ${images}" 
+                                     class="image-option" 
+                                     th:classappend="${product.imageUrl == img} ? 'selected' : ''"
+                                     th:data-url="${img}" 
+                                     onclick="selectImage(this)">
+                                    <img th:src="${img}" alt="Pre-loaded Coconut Asset">
+                                </div>
+                            </div>
+                            <div id="image-validation-error" class="text-danger mt-1" style="font-size: 13px; display: none; font-weight: 500;">
+                                Please select an image for your product.
+                            </div>
+                        </div>
+
+                        <!-- Submit Button -->
+                        <div class="pt-2">
+                            <button type="submit" class="btn-primary-custom w-100 py-3" style="font-size: 16px;">
+                                <span th:text="${isEdit} ? 'Save Changes' : 'Publish Product Listing'">Publish Product</span>
+                            </button>
+                        </div>
+
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <script>
+            // Image selection function
+            function selectImage(element) {
+                // Remove selected class from all items
+                document.querySelectorAll('.image-option').forEach(opt => {
+                    opt.classList.remove('selected');
+                });
+                
+                // Add selected class to the clicked item
+                element.classList.add('selected');
+                
+                // Update hidden input value
+                const url = element.getAttribute('data-url');
+                document.getElementById('imageUrl').value = url;
+
+                // Hide error message if shown
+                document.getElementById('image-validation-error').style.display = 'none';
+            }
+
+            // Client-side Bootstrap validation
+            (() => {
+                'use strict'
+                const form = document.getElementById('product-form');
+                form.addEventListener('submit', event => {
+                    const imageUrl = document.getElementById('imageUrl').value;
+                    const imgError = document.getElementById('image-validation-error');
+                    
+                    let imageValid = true;
+                    if (!imageUrl || imageUrl.trim() === '') {
+                        imgError.style.display = 'block';
+                        imageValid = false;
+                    }
+
+                    if (!form.checkValidity() || !imageValid) {
+                        event.preventDefault();
+                        event.stopPropagation();
+                    }
+                    form.classList.add('was-validated');
+                }, false);
+            })();
+        </script>
+    </div>
+</body>
+</html>

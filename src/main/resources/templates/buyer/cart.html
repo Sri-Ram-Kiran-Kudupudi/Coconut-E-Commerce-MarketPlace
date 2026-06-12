@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layout/base :: layout(~{::title}, ~{::content})}">
+<head>
+    <title>Shopping Cart - Coconut Marketplace</title>
+</head>
+<body>
+    <div th:fragment="content" class="container py-5">
+        
+        <!-- Header -->
+        <div class="mb-4">
+            <h1 class="page-h1 mb-1">My Shopping Cart</h1>
+            <p class="text-muted">Review your selected items, adjust quantities, and proceed to shipping.</p>
+        </div>
+
+        <!-- Empty State -->
+        <div th:if="${#lists.isEmpty(cartItems)}" class="custom-card text-center py-5">
+            <span style="font-size: 72px; display: block; margin-bottom: 20px;">🛒</span>
+            <h2 class="mb-2" style="font-weight: 700; color: var(--text-dark);">Your Cart is Empty</h2>
+            <p class="text-muted mb-4" style="max-width: 400px; margin: 0 auto 20px;">You haven't added any coconut products to your shopping cart yet. Browse our catalog to find items.</p>
+            <a th:href="@{/buyer/dashboard}" class="btn-primary-custom">
+                Explore Products Catalog
+            </a>
+        </div>
+
+        <!-- Cart Content (Split Screen) -->
+        <div th:if="${!#lists.isEmpty(cartItems)}" class="row g-4">
+            <!-- Items Column (8 cols) -->
+            <div class="col-lg-8">
+                <div class="custom-card p-0 overflow-hidden">
+                    <div class="table-responsive">
+                        <table class="table align-middle m-0">
+                            <thead class="bg-light" style="font-size: 13px; color: var(--text-grey);">
+                                <tr>
+                                    <th scope="col" class="ps-4 py-3">Product</th>
+                                    <th scope="col" class="py-3">Price</th>
+                                    <th scope="col" class="py-3 text-center" style="width: 150px;">Quantity</th>
+                                    <th scope="col" class="py-3">Total</th>
+                                    <th scope="col" class="pe-4 py-3 text-center" style="width: 80px;">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr th:each="item : ${cartItems}" style="font-size: 14.5px;">
+                                    <!-- Product Info -->
+                                    <td class="ps-4 py-3">
+                                        <div class="d-flex align-items-center gap-3">
+                                            <div style="width: 50px; height: 50px; background: #F0F4F0; border-radius: 8px; display: flex; align-items: center; justify-content: center; padding: 4px; border: 1px solid var(--border-color); flex-shrink: 0;">
+                                                <img th:src="${item.imageUrl}" alt="Item image" style="max-width: 100%; max-height: 100%; object-fit: contain;">
+                                            </div>
+                                            <div>
+                                                <a th:href="@{/buyer/product/{id}(id=${item.productId})}" th:text="${item.productName}" 
+                                                   style="font-weight: 600; color: var(--text-dark); text-decoration: none; display: block;">Item Name</a>
+                                                <span th:text="${item.categoryDisplayName}" style="font-size: 11px; text-transform: uppercase; color: var(--secondary-green); font-weight: 600;">Category</span>
+                                                <small class="text-muted d-block" style="font-size: 11px;">Sold by: <span th:text="${item.storeName}">Seller Store</span></small>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    
+                                    <!-- Price -->
+                                    <td class="py-3 font-weight-600" th:text="${'₹' + item.price}">₹0.00</td>
+                                    
+                                    <!-- Quantity Adjustment Controls -->
+                                    <td class="py-3">
+                                        <div class="d-flex justify-content-center align-items-center gap-1">
+                                            <!-- Decrement form -->
+                                            <form th:action="@{/buyer/cart/update}" method="post">
+                                                <input type="hidden" name="productId" th:value="${item.productId}">
+                                                <input type="hidden" name="quantity" th:value="${item.quantity - 1}">
+                                                <button type="submit" class="btn btn-sm btn-outline-secondary px-2" style="border-radius: 6px; font-weight: 700;">-</button>
+                                            </form>
+                                            
+                                            <!-- Display qty -->
+                                            <input type="text" class="form-control form-control-sm text-center bg-white" 
+                                                   th:value="${item.quantity}" readonly style="font-weight: 700; width: 42px; border-radius: 6px; border-color: var(--border-color);">
+                                            
+                                            <!-- Increment form -->
+                                            <form th:action="@{/buyer/cart/update}" method="post">
+                                                <input type="hidden" name="productId" th:value="${item.productId}">
+                                                <input type="hidden" name="quantity" th:value="${item.quantity + 1}">
+                                                <button type="submit" class="btn btn-sm btn-outline-secondary px-2" style="border-radius: 6px; font-weight: 700;" 
+                                                        th:disabled="${item.quantity >= item.stockQuantity}">+</button>
+                                            </form>
+                                        </div>
+                                    </td>
+                                    
+                                    <!-- Total Row Price -->
+                                    <td class="py-3 font-weight-700 text-success" th:text="${'₹' + item.totalPrice}">₹0.00</td>
+                                    
+                                    <!-- Delete Item Button -->
+                                    <td class="pe-4 py-3 text-center">
+                                        <form th:action="@{/buyer/cart/remove/{id}(id=${item.productId})}" method="post" class="d-inline">
+                                            <button type="submit" class="btn btn-sm btn-link text-danger p-0" title="Remove Item" style="text-decoration: none; font-size: 16px;">
+                                                🗑️
+                                            </button>
+                                        </form>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Summary Card Column (4 cols) -->
+            <div class="col-lg-4">
+                <div class="custom-card">
+                    <h3 class="mb-3" style="font-size: 18px; font-weight: 700;">Order Summary</h3>
+                    <hr class="my-3" style="border-color: var(--border-color);">
+
+                    <!-- Subtotal row -->
+                    <div class="d-flex justify-content-between mb-2" style="font-size: 14px;">
+                        <span class="text-muted">Subtotal</span>
+                        <span th:text="${'₹' + cartSubtotal}" style="font-weight: 600; color: var(--text-dark);">₹0.00</span>
+                    </div>
+
+                    <!-- Shipping row with dynamic thresholds -->
+                    <div class="d-flex justify-content-between mb-3" style="font-size: 14px;">
+                        <span class="text-muted">Delivery Charges</span>
+                        <span th:if="${cartSubtotal >= 500}" class="text-success fw-bold">FREE</span>
+                        <span th:if="${cartSubtotal < 500}" th:text="'₹50.00'" style="font-weight: 600; color: var(--text-dark);">₹50.00</span>
+                    </div>
+
+                    <!-- Free shipping indicator -->
+                    <div th:if="${cartSubtotal < 500}" class="p-2 mb-3 bg-light rounded text-center" style="font-size: 12px; border: 1px solid var(--border-color);">
+                        💡 Add <strong style="color: var(--primary-green);" th:text="${'₹' + (500 - cartSubtotal)}">₹100</strong> more to get <strong>FREE SHIPPING</strong>!
+                    </div>
+                    <div th:if="${cartSubtotal >= 500}" class="p-2 mb-3 bg-light rounded text-center text-success" style="font-size: 12px; border: 1px solid var(--light-green); font-weight: 600;">
+                        🎉 You qualified for <strong>FREE SHIPPING</strong>!
+                    </div>
+
+                    <hr class="my-3" style="border-color: var(--border-color);">
+
+                    <!-- Grand Total row -->
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <span style="font-weight: 700; color: var(--text-dark);">Total Amount</span>
+                        <span th:text="${'₹' + (cartSubtotal + (cartSubtotal >= 500 ? 0 : 50))}" class="fs-4 fw-bold text-success">₹0.00</span>
+                    </div>
+
+                    <!-- Action buttons -->
+                    <button type="button" class="btn-disabled-custom btn-primary-custom w-100 py-3 mb-2" style="font-size: 15px;" disabled>
+                        🔒 Proceed to Checkout
+                    </button>
+                    <small class="text-muted d-block text-center mb-3" style="font-size: 11px;">Checkout will be implemented in Phase 4</small>
+
+                    <a th:href="@{/buyer/dashboard}" class="btn btn-outline-success w-100 py-2" style="border-radius: 10px; font-weight: 600; font-size: 14px; border-color: var(--primary-green); color: var(--primary-green);">
+                        🛒 Continue Shopping
+                    </a>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</body>
+</html>

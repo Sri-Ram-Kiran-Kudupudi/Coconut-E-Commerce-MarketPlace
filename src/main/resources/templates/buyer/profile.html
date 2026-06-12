@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layout/base :: layout(~{::title}, ~{::content})}">
+<head>
+    <title>My Account - Coconut Marketplace</title>
+</head>
+<body>
+    <div th:fragment="content" class="container py-5">
+        <div class="row justify-content-center">
+            <div class="col-lg-8">
+                
+                <!-- Header -->
+                <div class="mb-4">
+                    <h1 class="page-h1 mb-1">My Account Settings</h1>
+                    <p class="text-muted">Manage your personal details and primary delivery address for smooth checkouts.</p>
+                </div>
+
+                <!-- Account Settings Card -->
+                <div class="custom-card">
+                    <h3 class="mb-4 pb-2" style="font-weight: 700; border-bottom: 1.5px solid var(--border-color);">Personal Information</h3>
+                    
+                    <!-- Alert displays -->
+                    <div th:if="${error}" class="alert alert-danger py-2 px-3 mb-4" style="font-size: 13.5px; border-radius: 8px;" th:text="${error}">
+                        Failed to update account.
+                    </div>
+
+                    <form th:action="@{/buyer/profile}" method="post" class="needs-validation" novalidate id="buyer-profile-form">
+                        
+                        <!-- Full Name -->
+                        <div class="mb-3">
+                            <label for="fullName" class="form-label" style="font-weight: 600; color: var(--text-dark);">Full Name</label>
+                            <input type="text" name="fullName" id="fullName" class="form-input" th:value="${user.fullName}" 
+                                   placeholder="John Doe" minlength="2" required>
+                            <div class="invalid-feedback">Please enter your full name (at least 2 characters).</div>
+                        </div>
+
+                        <!-- Email (Readonly) -->
+                        <div class="mb-3">
+                            <label for="email" class="form-label" style="font-weight: 600; color: var(--text-dark);">Email Address</label>
+                            <input type="email" id="email" class="form-input" th:value="${user.email}" disabled style="background-color: #F4F6F4;">
+                            <small class="text-muted mt-1 d-block">Registered login email cannot be changed.</small>
+                        </div>
+
+                        <!-- Phone Number -->
+                        <div class="mb-3">
+                            <label for="phoneNumber" class="form-label" style="font-weight: 600; color: var(--text-dark);">Phone Number</label>
+                            <input type="tel" name="phoneNumber" id="phoneNumber" class="form-input" th:value="${user.phoneNumber}" 
+                                   placeholder="e.g. +91 9876543210" pattern="^[+]?[0-9\s-]{10,15}$">
+                            <div class="invalid-feedback">Please enter a valid phone number (10 to 15 digits).</div>
+                        </div>
+
+                        <!-- Delivery Address -->
+                        <div class="mb-4">
+                            <label for="address" class="form-label" style="font-weight: 600; color: var(--text-dark);">Primary Delivery Address</label>
+                            <textarea name="address" id="address" class="form-input" rows="4" 
+                                      placeholder="Provide your complete shipping address (House No, Street, City, State, Pincode) so sellers know where to ship your orders..." 
+                                      th:text="${user.address}"></textarea>
+                            <div class="invalid-feedback">Please enter your shipping address.</div>
+                        </div>
+
+                        <!-- Submit Button -->
+                        <div class="pt-2">
+                            <button type="submit" class="btn-primary-custom w-100 py-3" style="font-size: 16px;">
+                                Update Profile Settings
+                            </button>
+                        </div>
+                    </form>
+
+                </div>
+
+            </div>
+        </div>
+
+        <script>
+            // Client-side Bootstrap validation
+            (() => {
+                'use strict'
+                const form = document.getElementById('buyer-profile-form');
+                form.addEventListener('submit', event => {
+                    if (!form.checkValidity()) {
+                        event.preventDefault();
+                        event.stopPropagation();
+                    }
+                    form.classList.add('was-validated');
+                }, false);
+            })();
+        </script>
+    </div>
+</body>
+</html>

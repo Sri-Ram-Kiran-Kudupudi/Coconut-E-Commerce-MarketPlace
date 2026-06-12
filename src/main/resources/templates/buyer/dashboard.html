@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layout/base :: layout(~{::title}, ~{::content})}">
+<head>
+    <title>Coconut Directory - Browse Products</title>
+</head>
+<body>
+    <div th:fragment="content" class="container py-4">
+
+        <div class="row g-4">
+            
+            <!-- Filters Sidebar (3 cols) -->
+            <div class="col-lg-3">
+                <div class="d-flex flex-column gap-3">
+                    
+                    <!-- Search Card -->
+                    <div class="custom-card p-3 shadow-sm">
+                        <form th:action="@{/buyer/dashboard}" method="get" class="m-0">
+                            <input type="hidden" name="category" th:value="${selectedCategory}" th:if="${selectedCategory != null}">
+                            <label class="form-label mb-2" style="font-weight: 700; color: var(--text-dark); font-size: 14px;">Search Products</label>
+                            <div class="input-group">
+                                <input type="text" name="search" class="form-input" placeholder="Search keyword..." 
+                                       th:value="${searchKeyword}" style="border-top-right-radius: 0; border-bottom-right-radius: 0;">
+                                <button type="submit" class="btn btn-success px-3" style="border-radius: 0 10px 10px 0; background-color: var(--primary-green); border: none; display: flex; align-items: center; justify-content: center;">
+                                    🔍
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- Category Filters Card -->
+                    <div class="custom-card p-3 shadow-sm">
+                        <label class="form-label mb-3" style="font-weight: 700; color: var(--text-dark); font-size: 14px; display: block;">Filter by Category</label>
+                        <div class="category-list-wrapper">
+                            <!-- All Categories Chip -->
+                            <a th:href="@{/buyer/dashboard(search=${searchKeyword})}" 
+                               class="category-chip" th:classappend="${selectedCategory == null} ? 'active' : ''">
+                                All Categories
+                            </a>
+                            
+                            <!-- Specific Category Chips -->
+                            <a th:each="cat : ${categories}" 
+                               th:href="@{/buyer/dashboard(category=${cat.name()}, search=${searchKeyword})}" 
+                               class="category-chip" 
+                               th:classappend="${selectedCategory == cat} ? 'active' : ''"
+                               th:text="${cat.displayName}">
+                                Fresh Coconut
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- Reset Filters Button -->
+                    <div th:if="${selectedCategory != null || (searchKeyword != null && !searchKeyword.isEmpty())}" class="text-center mt-1">
+                        <a th:href="@{/buyer/dashboard}" class="btn btn-sm btn-outline-danger w-100 py-2" style="border-radius: 8px; font-weight: 600; font-size: 12.5px;">
+                            Clear All Filters
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Products Listing Grid (9 cols) -->
+            <div class="col-lg-9">
+                
+                <!-- Active Filters Subtitle bar -->
+                <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2 px-1">
+                    <div>
+                        <h2 class="m-0" style="font-size: 20px; font-weight: 700; color: var(--text-dark);">Coconut Products</h2>
+                        <div class="mt-1 d-flex flex-wrap gap-1 align-items-center">
+                            <span th:if="${selectedCategory != null}" class="badge bg-success" style="font-size: 11px; padding: 5px 10px; font-weight: 600;" th:text="${selectedCategory.displayName}">Category</span>
+                            <span th:if="${searchKeyword != null && !searchKeyword.isEmpty()}" class="badge bg-secondary" style="font-size: 11px; padding: 5px 10px; font-weight: 600;" th:text="${'Keyword: ' + searchKeyword}">Keyword</span>
+                        </div>
+                    </div>
+                    <div class="text-muted" style="font-size: 13.5px;">
+                        Found <strong th:text="${products.size()}">0</strong> items
+                    </div>
+                </div>
+
+                <!-- Empty State -->
+                <div th:if="${#lists.isEmpty(products)}" class="custom-card text-center py-5 shadow-sm">
+                    <span style="font-size: 64px; display: block; margin-bottom: 15px;">🥥</span>
+                    <h3 class="mb-2" style="font-weight: 700; color: var(--text-dark);">No Products Found</h3>
+                    <p class="text-muted mb-0" style="max-width: 380px; margin: 0 auto;">Try adjusting your keywords, choosing another category, or resetting all filters.</p>
+                </div>
+
+                <!-- Product Card Grid -->
+                <div th:if="${!#lists.isEmpty(products)}" class="product-grid">
+                    <div th:each="prod : ${products}" class="product-card">
+                        
+                        <!-- Image wrapper -->
+                        <div class="product-img-wrapper">
+                            <img th:src="${prod.imageUrl}" alt="Product Image">
+                        </div>
+
+                        <!-- Product details -->
+                        <div class="product-details">
+                            <span class="product-cat" th:text="${prod.category.displayName}">Category</span>
+                            <h3 class="product-title" th:text="${prod.name}">Product Name</h3>
+                            
+                            <!-- Seller store meta badge -->
+                            <div class="product-seller-meta">
+                                🚜 <span th:text="${prod.seller.storeName}" style="color: var(--primary-green); font-weight: 600;">Farm Store</span>
+                            </div>
+
+                            <p class="product-desc" th:text="${prod.description}">Description text...</p>
+                            
+                            <div class="product-price-row">
+                                <div>
+                                    <span class="price-lbl d-block">Price</span>
+                                    <span class="price-val" th:text="${'₹' + prod.price}">₹0.00</span>
+                                </div>
+                                <div class="text-end">
+                                    <span class="price-lbl d-block">Stock</span>
+                                    <span th:class="${prod.stockQuantity <= 5} ? 'stock-lvl low' : 'stock-lvl good'" 
+                                          th:text="${prod.stockQuantity + ' units'}">0 units</span>
+                                </div>
+                            </div>
+
+                            <!-- Buttons -->
+                            <div class="product-btn-group mt-auto">
+                                <!-- Details View -->
+                                <a th:href="@{/buyer/product/{id}(id=${prod.id})}" class="btn btn-outline-success">
+                                    View Info
+                                </a>
+
+                                <!-- Quick Cart Add -->
+                                <form th:action="@{/buyer/cart/add}" method="post" class="flex-grow-1">
+                                    <input type="hidden" name="productId" th:value="${prod.id}">
+                                    <input type="hidden" name="quantity" value="1">
+                                    <button type="submit" class="btn-primary-custom">
+                                        Add to Cart
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+    </div>
+</body>
+</html>

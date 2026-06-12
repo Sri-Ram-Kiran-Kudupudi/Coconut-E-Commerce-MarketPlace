@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layout/base :: layout(~{::title}, ~{::content})}">
+<head>
+    <title th:text="${product.name} + ' - Coconut Details'"></title>
+    <style>
+        .details-img-container {
+            background-color: #F8FAF8;
+            border-radius: 16px;
+            border: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            max-width: 260px;
+            aspect-ratio: 1;
+            box-shadow: var(--shadow-sm);
+            overflow: hidden;
+            position: relative;
+            margin-left: 0;
+            margin-right: auto;
+            padding: 16px;
+        }
+        .details-img-container img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+            transition: transform 0.4s ease;
+        }
+        .details-img-container:hover img {
+            transform: scale(1.05);
+        }
+        @media (min-width: 768px) {
+            .details-image-sticky {
+                position: sticky;
+                top: 24px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div th:fragment="content" class="container py-4">
+        
+        <!-- Back Link -->
+        <div class="mb-4">
+            <a th:href="@{/buyer/dashboard}" class="text-success text-decoration-none" style="font-weight: 600; font-size: 14px;">
+                ← Back to Browse Products
+            </a>
+        </div>
+
+        <!-- Details Grid -->
+        <div class="row g-4">
+            <!-- Left Column: Image -->
+            <div class="col-md-4 col-12">
+                <div class="details-image-sticky">
+                    <div class="details-img-container">
+                        <img th:src="${product.imageUrl}" alt="Product Image">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Column: Information -->
+            <div class="col-md-8 col-12">
+                <div class="d-flex flex-column gap-3">
+                    
+                    <!-- Product Info Card -->
+                    <div class="custom-card p-3 shadow-sm">
+                        <div class="border-bottom pb-2 mb-3">
+                            <span class="badge bg-success mb-2" style="font-size: 11px; padding: 5px 10px; font-weight: 600; border-radius: 20px;" 
+                                  th:text="${product.category.displayName}">Category</span>
+                            <h1 class="page-h1 mt-1 mb-0" style="font-size: 24px; font-weight: 800; line-height: 1.2;" th:text="${product.name}">Product Name</h1>
+                        </div>
+                        
+                        <div class="row g-3 mb-3" style="font-size: 13.5px;">
+                            <div class="col-6">
+                                <span class="text-muted d-block" style="font-size: 10.5px; font-weight: 600; text-transform: uppercase;">Product Name</span>
+                                <strong th:text="${product.name}" style="color: var(--text-dark);">Product Name</strong>
+                            </div>
+                            <div class="col-6">
+                                <span class="text-muted d-block" style="font-size: 10.5px; font-weight: 600; text-transform: uppercase;">Category</span>
+                                <strong th:text="${product.category.displayName}" style="color: var(--text-dark);">Category</strong>
+                            </div>
+                            <div class="col-6">
+                                <span class="text-muted d-block" style="font-size: 10.5px; font-weight: 600; text-transform: uppercase;">Price</span>
+                                <strong class="text-success fs-5" th:text="${'₹' + product.price}">₹0.00</strong>
+                            </div>
+                            <div class="col-6">
+                                <span class="text-muted d-block" style="font-size: 10.5px; font-weight: 600; text-transform: uppercase;">Availability</span>
+                                <span th:if="${product.stockQuantity > 0}" class="badge bg-success" style="font-size: 10.5px; font-weight: 600; padding: 4px 8px; border-radius: 20px;" th:text="${product.stockQuantity + ' Units In Stock'}">In Stock</span>
+                                <span th:if="${product.stockQuantity == 0}" class="badge bg-danger" style="font-size: 10.5px; font-weight: 600; padding: 4px 8px; border-radius: 20px;">Out of Stock</span>
+                            </div>
+                        </div>
+
+                        <!-- Cart Addition Form -->
+                        <div th:if="${product.stockQuantity > 0}">
+                            <form th:action="@{/buyer/cart/add}" method="post" class="row g-2 align-items-end">
+                                <input type="hidden" name="productId" th:value="${product.id}">
+                                
+                                <div class="col-4 col-sm-3">
+                                    <label for="quantity" class="form-label" style="font-weight: 600; font-size: 12.5px; color: var(--text-dark); margin-bottom: 4px;">Quantity</label>
+                                    <input type="number" name="quantity" id="quantity" class="form-input text-center" value="1" 
+                                           min="1" th:max="${product.stockQuantity}" required style="padding: 8px;">
+                                </div>
+                                
+                                <div class="col-8 col-sm-9">
+                                    <button type="submit" class="btn-primary-custom w-100 py-2" style="font-size: 13px; font-weight: 600; box-shadow: none;">
+                                        Add to Cart
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                        
+                        <div th:if="${product.stockQuantity == 0}" class="alert alert-warning py-2 text-center m-0" style="border-radius: 8px; font-size: 12.5px;">
+                            ⚠️ Currently unavailable due to insufficient stock.
+                        </div>
+                    </div>
+
+                    <!-- Description Card -->
+                    <div class="custom-card p-3 shadow-sm">
+                        <h4 style="font-size: 14.5px; font-weight: 700; color: var(--text-dark); margin-bottom: 8px; border-bottom: 1px solid var(--border-color); padding-bottom: 6px;">Description</h4>
+                        <p th:text="${product.description}" style="font-size: 13px; line-height: 1.5; color: var(--text-grey); margin: 0; white-space: pre-line;">
+                            Product description goes here...
+                        </p>
+                    </div>
+
+                    <!-- Seller Card -->
+                    <div class="custom-card p-3 shadow-sm">
+                        <h4 style="font-size: 14.5px; font-weight: 700; color: var(--primary-green); margin-bottom: 8px; border-bottom: 1px solid var(--border-color); padding-bottom: 6px;">
+                            🚜 Seller Details
+                        </h4>
+                        <div class="mb-2">
+                            <span class="text-muted d-block" style="font-size: 10px; font-weight: 600; text-transform: uppercase;">Store Name</span>
+                            <strong th:text="${product.seller.storeName}" style="color: var(--text-dark); font-size: 14px;">Seller Store</strong>
+                        </div>
+                        <div class="mb-2" th:if="${product.seller.storeDescription != null && !product.seller.storeDescription.isEmpty()}">
+                            <span class="text-muted d-block" style="font-size: 10px; font-weight: 600; text-transform: uppercase;">Seller Description</span>
+                            <p th:text="${product.seller.storeDescription}" style="font-size: 12.5px; color: var(--text-grey); margin: 0; line-height: 1.4;">Store descriptions...</p>
+                        </div>
+                        <div class="mb-2">
+                            <span class="text-muted d-block" style="font-size: 10px; font-weight: 600; text-transform: uppercase;">Farming Location</span>
+                            <p th:text="${(product.seller.address != null && !product.seller.address.isEmpty() ? product.seller.address + ', ' : '') + product.seller.city + ', ' + product.seller.district + ', ' + product.seller.state + ' - ' + product.seller.pincode}" 
+                               style="font-size: 12.5px; color: var(--text-grey); margin: 0; line-height: 1.4;">Pollachi, Coimbatore, Tamil Nadu</p>
+                        </div>
+                        <div>
+                            <span class="text-muted d-block" style="font-size: 10px; font-weight: 600; text-transform: uppercase; margin-bottom: 2px;">Contact Information</span>
+                            <div class="d-flex flex-column gap-1" style="font-size: 12.5px; color: var(--text-grey);">
+                                <div>📧 <strong>Email:</strong> <a th:href="'mailto:' + ${product.seller.user.email}" th:text="${product.seller.user.email}" style="color: var(--primary-green); text-decoration: none;">seller@example.com</a></div>
+                                <div>📞 <strong>Phone:</strong> <span th:text="${product.seller.user.phoneNumber != null ? product.seller.user.phoneNumber : 'Not Provided'}">9876543210</span></div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+    </div>
+</body>
+</html>

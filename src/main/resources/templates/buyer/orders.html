@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layout/base :: layout(~{::title}, ~{::content})}">
+<head>
+    <title>My Orders - Coconut Marketplace</title>
+</head>
+<body>
+    <div th:fragment="content" class="container py-5">
+        
+        <!-- Header -->
+        <div class="mb-4">
+            <h1 class="page-h1 mb-1">My Purchase Orders</h1>
+            <p class="text-muted">Track order processing, logistics shipping status, and historical purchases.</p>
+        </div>
+
+        <!-- Empty State (Wired to orders database in Phase 4) -->
+        <div class="custom-card text-center py-5">
+            <span style="font-size: 72px; display: block; margin-bottom: 20px;">📦</span>
+            <h2 class="mb-2" style="font-weight: 700; color: var(--text-dark);">No Orders Placed Yet</h2>
+            <p class="text-muted mb-4" style="max-width: 400px; margin: 0 auto 20px;">You haven't ordered any coconut products yet. Visit the catalog to find organic farm goods!</p>
+            <a th:href="@{/buyer/dashboard}" class="btn-primary-custom">
+                Start Shopping Now
+            </a>
+        </div>
+
+    </div>
+</body>
+</html>

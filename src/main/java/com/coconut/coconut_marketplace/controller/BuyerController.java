@@ -1,0 +1,276 @@
+package com.coconut.coconut_marketplace.controller;
+
+import com.coconut.coconut_marketplace.dto.CartItemDto;
+import com.coconut.coconut_marketplace.entity.Product;
+import com.coconut.coconut_marketplace.entity.User;
+import com.coconut.coconut_marketplace.enums.Category;
+import com.coconut.coconut_marketplace.enums.ProductStatus;
+import com.coconut.coconut_marketplace.repository.ProductRepository;
+import com.coconut.coconut_marketplace.repository.UserRepository;
+import com.coconut.coconut_marketplace.service.ProductService;
+import jakarta.servlet.http.HttpSession;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+
+import java.math.BigDecimal;
+import java.security.Principal;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+@Controller
+@RequestMapping("/buyer")
+public class BuyerController {
+
+    @Autowired
+    private UserRepository userRepository;
+
+    @Autowired
+    private ProductRepository productRepository;
+
+    @Autowired
+    private ProductService productService;
+
+    private static final String CART_SESSION_KEY = "sessionCart";
+
+    private User getLoggedInUser(Principal principal) {
+        if (principal == null) {
+            throw new SecurityException("Authentication is required.");
+        }
+        return userRepository.findByEmail(principal.getName())
+                .orElseThrow(() -> new UsernameNotFoundException("User not found with email: " + principal.getName()));
+    }
+
+    @SuppressWarnings("unchecked")
+    private Map<Long, CartItemDto> getCartFromSession(HttpSession session) {
+        Map<Long, CartItemDto> cart = (Map<Long, CartItemDto>) session.getAttribute(CART_SESSION_KEY);
+        if (cart == null) {
+            cart = new HashMap<>();
+            session.setAttribute(CART_SESSION_KEY, cart);
+        }
+        return cart;
+    }
+
+    private void updateSessionCartCount(HttpSession session, Map<Long, CartItemDto> cart) {
+        int totalItems = cart.values().stream().mapToInt(CartItemDto::getQuantity).sum();
+        session.setAttribute("cartCount", totalItems);
+    }
+
+    @GetMapping("/dashboard")
+    public String dashboard(@RequestParam(value = "search", required = false) String search,
+                            @RequestParam(value = "category", required = false) Category category,
+                            Model model,
+                            Principal principal) {
+        getLoggedInUser(principal); // Security check
+        
+        List<Product> products;
+
+        if (category != null && search != null && !search.trim().isEmpty()) {
+            products = productRepository.findByStatusAndCategoryAndNameContainingIgnoreCaseOrderByCreatedAtDesc(
+                    ProductStatus.ACTIVE, category, search.trim());
+        } else if (category != null) {
+            products = productRepository.findByCategoryAndStatusOrderByCreatedAtDesc(category, ProductStatus.ACTIVE);
+        } else if (search != null && !search.trim().isEmpty()) {
+            products = productRepository.findByStatusAndNameContainingIgnoreCaseOrderByCreatedAtDesc(
+                    ProductStatus.ACTIVE, search.trim());
+        } else {
+            products = productRepository.findByStatusOrderByCreatedAtDesc(ProductStatus.ACTIVE);
+        }
+
+        model.addAttribute("products", products);
+        model.addAttribute("categories", Category.values());
+        model.addAttribute("selectedCategory", category);
+        model.addAttribute("searchKeyword", search);
+        return "buyer/dashboard";
+    }
+
+    @GetMapping("/product/{id}")
+    public String viewProductDetails(@PathVariable Long id, Model model, Principal principal) {
+        getLoggedInUser(principal); // Security check
+        Product product = productService.getProductById(id);
+
+        if (product.getStatus() == ProductStatus.DISABLED) {
+            throw new SecurityException("This product listing is currently unavailable.");
+        }
+
+        model.addAttribute("product", product);
+        return "buyer/product-details";
+    }
+
+    // ==========================================
+    // CART OPERATIONS
+    // ==========================================
+
+    @GetMapping("/cart")
+    public String viewCart(Model model, Principal principal, HttpSession session) {
+        getLoggedInUser(principal);
+        Map<Long, CartItemDto> cart = getCartFromSession(session);
+        
+        BigDecimal subtotal = cart.values().stream()
+                .map(CartItemDto::getTotalPrice)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        model.addAttribute("cartItems", new ArrayList<>(cart.values()));
+        model.addAttribute("cartSubtotal", subtotal);
+        return "buyer/cart";
+    }
+
+    @PostMapping("/cart/add")
+    public String addToCart(@RequestParam("productId") Long productId,
+                            @RequestParam("quantity") Integer quantity,
+                            HttpSession session,
+                            Principal principal,
+                            RedirectAttributes redirectAttributes) {
+        try {
+            getLoggedInUser(principal);
+            Product product = productService.getProductById(productId);
+
+            if (product.getStatus() != ProductStatus.ACTIVE) {
+                redirectAttributes.addFlashAttribute("error", "Product is currently out of stock or unavailable.");
+                return "redirect:/buyer/dashboard";
+            }
+
+            if (quantity <= 0) {
+                redirectAttributes.addFlashAttribute("error", "Quantity must be at least 1.");
+                return "redirect:/buyer/product/" + productId;
+            }
+
+            if (quantity > product.getStockQuantity()) {
+                redirectAttributes.addFlashAttribute("error", "Cannot add more than available stock (" + product.getStockQuantity() + ").");
+                return "redirect:/buyer/product/" + productId;
+            }
+
+            Map<Long, CartItemDto> cart = getCartFromSession(session);
+            
+            if (cart.containsKey(productId)) {
+                CartItemDto existingItem = cart.get(productId);
+                int newQty = existingItem.getQuantity() + quantity;
+                if (newQty > product.getStockQuantity()) {
+                    existingItem.setQuantity(product.getStockQuantity());
+                    redirectAttributes.addFlashAttribute("infoMessage", "Capped item quantity at maximum available stock.");
+                } else {
+                    existingItem.setQuantity(newQty);
+                }
+            } else {
+                CartItemDto newItem = CartItemDto.builder()
+                        .productId(product.getId())
+                        .productName(product.getName())
+                        .imageUrl(product.getImageUrl())
+                        .categoryDisplayName(product.getCategory().getDisplayName())
+                        .price(product.getPrice())
+                        .quantity(quantity)
+                        .storeName(product.getSeller().getStoreName())
+                        .stockQuantity(product.getStockQuantity())
+                        .build();
+                cart.put(productId, newItem);
+            }
+
+            updateSessionCartCount(session, cart);
+            redirectAttributes.addFlashAttribute("successMessage", "Item added to cart successfully.");
+            return "redirect:/buyer/cart";
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("error", e.getMessage());
+            return "redirect:/buyer/dashboard";
+        }
+    }
+
+    @PostMapping("/cart/update")
+    public String updateCartQuantity(@RequestParam("productId") Long productId,
+                                     @RequestParam("quantity") Integer quantity,
+                                     HttpSession session,
+                                     Principal principal,
+                                     RedirectAttributes redirectAttributes) {
+        try {
+            getLoggedInUser(principal);
+            Map<Long, CartItemDto> cart = getCartFromSession(session);
+
+            if (!cart.containsKey(productId)) {
+                return "redirect:/buyer/cart";
+            }
+
+            if (quantity <= 0) {
+                cart.remove(productId);
+            } else {
+                Product product = productService.getProductById(productId);
+                CartItemDto item = cart.get(productId);
+                if (quantity > product.getStockQuantity()) {
+                    item.setQuantity(product.getStockQuantity());
+                    redirectAttributes.addFlashAttribute("error", "Requested quantity exceeds available stock (" + product.getStockQuantity() + "). Quantity set to maximum.");
+                } else {
+                    item.setQuantity(quantity);
+                }
+            }
+
+            updateSessionCartCount(session, cart);
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("error", e.getMessage());
+        }
+        return "redirect:/buyer/cart";
+    }
+
+    @PostMapping("/cart/remove/{id}")
+    public String removeFromCart(@PathVariable Long id,
+                                 HttpSession session,
+                                 Principal principal,
+                                 RedirectAttributes redirectAttributes) {
+        try {
+            getLoggedInUser(principal);
+            Map<Long, CartItemDto> cart = getCartFromSession(session);
+            
+            if (cart.containsKey(id)) {
+                cart.remove(id);
+                redirectAttributes.addFlashAttribute("successMessage", "Item removed from cart.");
+            }
+            
+            updateSessionCartCount(session, cart);
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("error", e.getMessage());
+        }
+        return "redirect:/buyer/cart";
+    }
+
+    // ==========================================
+    // BUYER PROFILE & ORDERS
+    // ==========================================
+
+    @GetMapping("/profile")
+    public String showProfile(Model model, Principal principal) {
+        User user = getLoggedInUser(principal);
+        model.addAttribute("user", user);
+        return "buyer/profile";
+    }
+
+    @PostMapping("/profile")
+    public String updateProfile(@ModelAttribute User userDetails,
+                                Principal principal,
+                                RedirectAttributes redirectAttributes,
+                                Model model) {
+        try {
+            User currentUser = getLoggedInUser(principal);
+            currentUser.setFullName(userDetails.getFullName());
+            currentUser.setPhoneNumber(userDetails.getPhoneNumber());
+            currentUser.setAddress(userDetails.getAddress());
+
+            userRepository.save(currentUser);
+            redirectAttributes.addFlashAttribute("successMessage", "Profile updated successfully.");
+            return "redirect:/buyer/profile";
+        } catch (Exception e) {
+            model.addAttribute("error", e.getMessage());
+            model.addAttribute("user", userDetails);
+            return "buyer/profile";
+        }
+    }
+
+    @GetMapping("/orders")
+    public String showOrders(Model model, Principal principal) {
+        getLoggedInUser(principal);
+        // Persisted database order tracking will be implemented in Phase 4.
+        model.addAttribute("orders", new ArrayList<>());
+        return "buyer/orders";
+    }
+}

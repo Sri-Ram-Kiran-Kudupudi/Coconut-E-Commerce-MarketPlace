@@ -13,9 +13,10 @@ import java.util.List;
 public interface ProductRepository extends JpaRepository<Product, Long> {
     List<Product> findBySeller(SellerProfile seller);
     List<Product> findBySellerOrderByCreatedAtDesc(SellerProfile seller);
-    List<Product> findByStatus(ProductStatus status);
-    List<Product> findByCategoryAndStatus(Category category, ProductStatus status);
-    List<Product> findByStatusAndNameContainingIgnoreCase(ProductStatus status, String name);
+    List<Product> findByStatusOrderByCreatedAtDesc(ProductStatus status);
+    List<Product> findByCategoryAndStatusOrderByCreatedAtDesc(Category category, ProductStatus status);
+    List<Product> findByStatusAndNameContainingIgnoreCaseOrderByCreatedAtDesc(ProductStatus status, String name);
+    List<Product> findByStatusAndCategoryAndNameContainingIgnoreCaseOrderByCreatedAtDesc(ProductStatus status, Category category, String name);
     long countBySeller(SellerProfile seller);
     long countBySellerAndStatus(SellerProfile seller, ProductStatus status);
 }

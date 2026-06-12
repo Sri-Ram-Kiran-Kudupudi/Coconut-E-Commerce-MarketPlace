@@ -37,13 +37,23 @@
                     
                     <!-- Buyer Role Links -->
                     <li class="nav-item" sec:authorize="hasRole('BUYER')">
-                        <a class="nav-link" th:href="@{/buyer/dashboard}">Browse Products</a>
+                        <a class="nav-link" th:href="@{/buyer/dashboard}">Home</a>
+                    </li>
+                    <li class="nav-item" sec:authorize="hasRole('BUYER')">
+                        <a class="nav-link position-relative d-inline-flex align-items-center me-3" th:href="@{/buyer/cart}">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="currentColor" class="bi bi-cart3 me-1" viewBox="0 0 16 16" style="color: var(--text-dark); vertical-align: middle;">
+                                <path d="M0 1.5A.5.5 0 0 1 .5 1H2a.5.5 0 0 1 .485.379L2.89 3H14.5a.5.5 0 0 1 .49.598l-1 5a.5.5 0 0 1-.465.401l-9.397.472L4.415 11H13a.5.5 0 0 1 0 1H4a.5.5 0 0 1-.491-.408L2.01 3.607 1.61 2H.5a.5.5 0 0 1-.5-.5zM3.102 4l.84 4.479 9.144-.459L13.89 4H3.102zM5 12a2 2 0 1 0 0 4 2 2 0 0 0 0-4zm7 0a2 2 0 1 0 0 4 2 2 0 0 0 0-4zm-7 1a1 1 0 1 1 0 2 1 1 0 0 1 0-2zm7 0a1 1 0 1 1 0 2 1 1 0 0 1 0-2z"/>
+                            </svg>
+                            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" 
+                                  style="font-size: 9px; padding: 4px 6px; transform: translate(-40%, 10%) !important;"
+                                  th:text="${session.cartCount != null ? session.cartCount : 0}">0</span>
+                        </a>
                     </li>
                     <li class="nav-item" sec:authorize="hasRole('BUYER')">
                         <a class="nav-link" th:href="@{/buyer/orders}">My Orders</a>
                     </li>
                     <li class="nav-item" sec:authorize="hasRole('BUYER')">
-                        <a class="nav-link" th:href="@{/buyer/profile}">Profile 👤</a>
+                        <a class="nav-link" th:href="@{/buyer/profile}">Profile</a>
                     </li>
                     
                     <!-- Seller Role Links -->
@@ -57,14 +67,14 @@
                         <a class="nav-link" th:href="@{/seller/orders}">Orders</a>
                     </li>
                     <li class="nav-item" sec:authorize="hasRole('SELLER')">
-                        <a class="nav-link" th:href="@{/seller/profile}">Profile 👤</a>
+                        <a class="nav-link" th:href="@{/seller/profile}">Profile</a>
                     </li>
                     
                     <!-- Authenticated User Logout Link -->
                     <li class="nav-item ms-lg-3" sec:authorize="isAuthenticated()">
-                        <form th:action="@{/logout}" method="post" class="d-inline">
-                            <button type="submit" class="btn btn-sm btn-outline-danger">Logout</button>
-                        </form>
+                        <button type="button" class="btn btn-sm btn-outline-danger px-3 py-1.5" data-bs-toggle="modal" data-bs-target="#logoutModal" style="border-radius: 8px; font-weight: 600; transition: all 0.2s ease;">
+                            Logout
+                        </button>
                     </li>
                 </ul>
             </div>
@@ -73,6 +83,27 @@
 
     <!-- Main Content Injection -->
     <div th:replace="${content}"></div>
+
+    <!-- Logout Confirmation Modal -->
+    <div sec:authorize="isAuthenticated()" class="modal fade" id="logoutModal" tabindex="-1" aria-labelledby="logoutModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content" style="border-radius: 16px; border: none; box-shadow: var(--shadow-lg); background-color: var(--card-bg);">
+                <div class="modal-header" style="border-bottom: 1px solid var(--border-color); padding: 20px;">
+                    <h5 class="modal-title" id="logoutModalLabel" style="font-weight: 700; color: var(--text-dark);">Confirm Logout</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body" style="padding: 24px; color: var(--text-grey); font-size: 15px;">
+                    Are you sure you want to logout?
+                </div>
+                <div class="modal-footer" style="border-top: 1px solid var(--border-color); padding: 16px 20px;">
+                    <button type="button" class="btn btn-outline-secondary px-4 py-2" data-bs-dismiss="modal" style="border-radius: 8px; font-weight: 600;">Cancel</button>
+                    <form th:action="@{/logout}" method="post" class="d-inline">
+                        <button type="submit" class="btn btn-danger px-4 py-2" style="border-radius: 8px; font-weight: 600; background-color: var(--error-red); border: none;">Logout</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <!-- Toast Notifications Container -->
     <div class="toast-container-custom" id="toastContainer">

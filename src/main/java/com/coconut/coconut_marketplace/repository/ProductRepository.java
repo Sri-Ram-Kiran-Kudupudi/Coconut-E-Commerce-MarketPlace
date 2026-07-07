@@ -4,6 +4,8 @@ import com.coconut.coconut_marketplace.entity.Product;
 import com.coconut.coconut_marketplace.entity.SellerProfile;
 import com.coconut.coconut_marketplace.enums.Category;
 import com.coconut.coconut_marketplace.enums.ProductStatus;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -17,6 +19,12 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
     List<Product> findByCategoryAndStatusOrderByCreatedAtDesc(Category category, ProductStatus status);
     List<Product> findByStatusAndNameContainingIgnoreCaseOrderByCreatedAtDesc(ProductStatus status, String name);
     List<Product> findByStatusAndCategoryAndNameContainingIgnoreCaseOrderByCreatedAtDesc(ProductStatus status, Category category, String name);
+    
+    Page<Product> findByStatusOrderByCreatedAtDesc(ProductStatus status, Pageable pageable);
+    Page<Product> findByCategoryAndStatusOrderByCreatedAtDesc(Category category, ProductStatus status, Pageable pageable);
+    Page<Product> findByStatusAndNameContainingIgnoreCaseOrderByCreatedAtDesc(ProductStatus status, String name, Pageable pageable);
+    Page<Product> findByStatusAndCategoryAndNameContainingIgnoreCaseOrderByCreatedAtDesc(ProductStatus status, Category category, String name, Pageable pageable);
+
     long countBySeller(SellerProfile seller);
     long countBySellerAndStatus(SellerProfile seller, ProductStatus status);
     List<Product> findBySellerAndStockQuantityLessThanEqualAndStatusNotOrderByStockQuantityAsc(SellerProfile seller, Integer threshold, ProductStatus status);

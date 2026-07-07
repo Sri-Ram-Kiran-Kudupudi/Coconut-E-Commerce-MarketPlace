@@ -905,4 +905,117 @@ h1, h2, h3, h4, h5, h6 {
     box-shadow: var(--shadow-sm);
 }
 
+/* ==========================================================================
+   BUYER DASHBOARD PAGINATION & LAYOUT IMPROVEMENTS
+   ========================================================================== */
+
+/* Buyer Specific Product Grid Layout: 3 Columns Desktop, 2 Columns Tablet, 1 Column Mobile */
+.buyer-product-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+}
+
+@media (max-width: 991px) {
+    .buyer-product-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 576px) {
+    .buyer-product-grid {
+        grid-template-columns: repeat(1, 1fr);
+    }
+}
+
+/* Compact Filters Sidebar Styles */
+.sidebar-compact-container {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.sidebar-compact-card {
+    padding: 16px !important;
+    border-radius: 12px !important;
+}
+
+.sidebar-compact-title {
+    font-weight: 700;
+    color: var(--text-dark);
+    font-size: 13.5px;
+    display: block;
+    margin-bottom: 8px;
+}
+
+.sidebar-compact-container .category-chip {
+    padding: 7px 11px;
+    font-size: 12.5px;
+    border-radius: 8px;
+}
+
+/* Pagination Container & Items styling */
+.pagination-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 6px;
+    margin-top: 24px;
+    margin-bottom: 12px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border-color);
+}
+
+.pagination-item {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 34px;
+    height: 34px;
+    padding: 0 12px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-grey);
+    text-decoration: none;
+    background-color: var(--card-bg);
+    border: 1.5px solid var(--border-color);
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    user-select: none;
+}
+
+.pagination-item:hover:not(.disabled):not(.active) {
+    color: var(--primary-green);
+    border-color: var(--secondary-green);
+    background-color: var(--light-green);
+    transform: translateY(-1px);
+}
+
+.pagination-item.active {
+    background-color: var(--primary-green);
+    color: #FFFFFF;
+    border-color: var(--primary-green);
+    box-shadow: 0 3px 6px rgba(46, 125, 50, 0.15);
+}
+
+.pagination-item.disabled {
+    color: #BDC3C7;
+    background-color: #F4F6F4;
+    border-color: var(--border-color);
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
+.pagination-ellipsis {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 34px;
+    height: 34px;
+    font-size: 13px;
+    color: var(--text-grey);
+    font-weight: 600;
+    user-select: none;
+}
+
 

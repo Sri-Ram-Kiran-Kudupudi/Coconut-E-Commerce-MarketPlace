@@ -14,6 +14,9 @@ import com.coconut.coconut_marketplace.service.ProductService;
 import com.coconut.coconut_marketplace.service.OrderService;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -74,28 +77,89 @@ public class BuyerController {
     @GetMapping("/dashboard")
     public String dashboard(@RequestParam(value = "search", required = false) String search,
                             @RequestParam(value = "category", required = false) Category category,
+                            @RequestParam(value = "page", defaultValue = "1") int page,
                             Model model,
                             Principal principal) {
         getLoggedInUser(principal); // Security check
         
-        List<Product> products;
+        int pageSize = 6;
+        int currentPage = page;
+        if (currentPage < 1) {
+            currentPage = 1;
+        }
+        Pageable pageable = PageRequest.of(currentPage - 1, pageSize);
+        Page<Product> productPage;
 
-        if (category != null && search != null && !search.trim().isEmpty()) {
-            products = productRepository.findByStatusAndCategoryAndNameContainingIgnoreCaseOrderByCreatedAtDesc(
-                    ProductStatus.ACTIVE, category, search.trim());
+        String searchKeyword = search != null ? search.trim() : "";
+
+        if (category != null && !searchKeyword.isEmpty()) {
+            productPage = productRepository.findByStatusAndCategoryAndNameContainingIgnoreCaseOrderByCreatedAtDesc(
+                    ProductStatus.ACTIVE, category, searchKeyword, pageable);
         } else if (category != null) {
-            products = productRepository.findByCategoryAndStatusOrderByCreatedAtDesc(category, ProductStatus.ACTIVE);
-        } else if (search != null && !search.trim().isEmpty()) {
-            products = productRepository.findByStatusAndNameContainingIgnoreCaseOrderByCreatedAtDesc(
-                    ProductStatus.ACTIVE, search.trim());
+            productPage = productRepository.findByCategoryAndStatusOrderByCreatedAtDesc(category, ProductStatus.ACTIVE, pageable);
+        } else if (!searchKeyword.isEmpty()) {
+            productPage = productRepository.findByStatusAndNameContainingIgnoreCaseOrderByCreatedAtDesc(
+                    ProductStatus.ACTIVE, searchKeyword, pageable);
         } else {
-            products = productRepository.findByStatusOrderByCreatedAtDesc(ProductStatus.ACTIVE);
+            productPage = productRepository.findByStatusOrderByCreatedAtDesc(ProductStatus.ACTIVE, pageable);
         }
 
-        model.addAttribute("products", products);
+        // If the page requested is out of range, default back to the last page
+        if (currentPage > productPage.getTotalPages() && productPage.getTotalPages() > 0) {
+            currentPage = productPage.getTotalPages();
+            pageable = PageRequest.of(currentPage - 1, pageSize);
+            if (category != null && !searchKeyword.isEmpty()) {
+                productPage = productRepository.findByStatusAndCategoryAndNameContainingIgnoreCaseOrderByCreatedAtDesc(
+                        ProductStatus.ACTIVE, category, searchKeyword, pageable);
+            } else if (category != null) {
+                productPage = productRepository.findByCategoryAndStatusOrderByCreatedAtDesc(category, ProductStatus.ACTIVE, pageable);
+            } else if (!searchKeyword.isEmpty()) {
+                productPage = productRepository.findByStatusAndNameContainingIgnoreCaseOrderByCreatedAtDesc(
+                        ProductStatus.ACTIVE, searchKeyword, pageable);
+            } else {
+                productPage = productRepository.findByStatusOrderByCreatedAtDesc(ProductStatus.ACTIVE, pageable);
+            }
+        }
+
+        long totalItems = productPage.getTotalElements();
+        int totalPages = productPage.getTotalPages();
+        long startItem = totalItems == 0 ? 0 : (long) (currentPage - 1) * pageSize + 1;
+        long endItem = Math.min((long) currentPage * pageSize, totalItems);
+
+        // Windowed pagination logic
+        List<String> pageNumbers = new ArrayList<>();
+        if (totalPages > 0) {
+            java.util.SortedSet<Integer> pagesToShow = new java.util.TreeSet<>();
+            pagesToShow.add(1);
+            pagesToShow.add(totalPages);
+            for (int i = Math.max(1, currentPage - 2); i <= Math.min(totalPages, currentPage + 2); i++) {
+                pagesToShow.add(i);
+            }
+
+            Integer lastPage = null;
+            for (Integer p : pagesToShow) {
+                if (lastPage != null) {
+                    if (p - lastPage > 2) {
+                        pageNumbers.add("...");
+                    } else if (p - lastPage == 2) {
+                        pageNumbers.add(String.valueOf(lastPage + 1));
+                    }
+                }
+                pageNumbers.add(String.valueOf(p));
+                lastPage = p;
+            }
+        }
+
+        model.addAttribute("products", productPage.getContent());
         model.addAttribute("categories", Category.values());
         model.addAttribute("selectedCategory", category);
         model.addAttribute("searchKeyword", search);
+        model.addAttribute("currentPage", currentPage);
+        model.addAttribute("totalPages", totalPages);
+        model.addAttribute("totalItems", totalItems);
+        model.addAttribute("startItem", startItem);
+        model.addAttribute("endItem", endItem);
+        model.addAttribute("pageNumbers", pageNumbers);
         return "buyer/dashboard";
     }
 

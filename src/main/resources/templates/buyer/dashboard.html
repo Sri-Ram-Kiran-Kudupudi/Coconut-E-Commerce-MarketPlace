@@ -10,32 +10,31 @@
             
             <!-- Filters Sidebar (3 cols) -->
             <div class="col-lg-3">
-                <div class="d-flex flex-column gap-3">
+                <div class="sidebar-compact-container">
                     
-                    <!-- Search Card -->
-                    <div class="custom-card p-3 shadow-sm">
+                    <!-- Unified Filters Card -->
+                    <div class="custom-card sidebar-compact-card shadow-sm">
+                        <!-- Search Section -->
                         <form th:action="@{/buyer/dashboard}" method="get" class="m-0">
                             <input type="hidden" name="category" th:value="${selectedCategory}" th:if="${selectedCategory != null}">
-                            <label class="form-label mb-2" style="font-weight: 700; color: var(--text-dark); font-size: 14px;">Search Products</label>
-                            <div class="input-group d-flex flex-nowrap">
+                            <label class="sidebar-compact-title">Search Products</label>
+                            <div class="input-group d-flex flex-nowrap mb-3">
                                 <input type="text"
                                        name="search"
                                        class="form-input flex-grow-1"
                                        placeholder="Search keyword..."
                                        th:value="${searchKeyword}"
-                                       style="border-top-right-radius:0;border-bottom-right-radius:0;">
+                                       style="border-top-right-radius:0;border-bottom-right-radius:0;padding:8px 12px;font-size:13px;">
                                 <button type="submit"
                                         class="btn btn-success"
-                                        style="width:68px;border-radius:0 10px 10px 0;background-color:var(--primary-green);border:none;display:flex;align-items:center;justify-content:center;">
+                                        style="width:50px;border-radius:0 10px 10px 0;background-color:var(--primary-green);border:none;display:flex;align-items:center;justify-content:center;">
                                     🔍
                                 </button>
                             </div>
                         </form>
-                    </div>
 
-                    <!-- Category Filters Card -->
-                    <div class="custom-card p-3 shadow-sm">
-                        <label class="form-label mb-3" style="font-weight: 700; color: var(--text-dark); font-size: 14px; display: block;">Filter by Category</label>
+                        <!-- Category Filters Section -->
+                        <label class="sidebar-compact-title">Filter by Category</label>
                         <div class="category-list-wrapper">
                             <!-- All Categories Chip -->
                             <a th:href="@{/buyer/dashboard(search=${searchKeyword})}" 
@@ -52,13 +51,13 @@
                                 Fresh Coconut
                             </a>
                         </div>
-                    </div>
 
-                    <!-- Reset Filters Button -->
-                    <div th:if="${selectedCategory != null || (searchKeyword != null && !searchKeyword.isEmpty())}" class="text-center mt-1">
-                        <a th:href="@{/buyer/dashboard}" class="btn btn-sm btn-outline-danger w-100 py-2" style="border-radius: 8px; font-weight: 600; font-size: 12.5px;">
-                            Clear All Filters
-                        </a>
+                        <!-- Reset Filters Button -->
+                        <div th:if="${selectedCategory != null || (searchKeyword != null && !searchKeyword.isEmpty())}" class="text-center mt-3">
+                            <a th:href="@{/buyer/dashboard}" class="btn btn-sm btn-outline-danger w-100 py-1.5" style="border-radius: 8px; font-weight: 600; font-size: 12px;">
+                                Clear All Filters
+                            </a>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -75,8 +74,8 @@
                             <span th:if="${searchKeyword != null && !searchKeyword.isEmpty()}" class="badge bg-secondary" style="font-size: 11px; padding: 5px 10px; font-weight: 600;" th:text="${'Keyword: ' + searchKeyword}">Keyword</span>
                         </div>
                     </div>
-                    <div class="text-muted" style="font-size: 13.5px;">
-                        Found <strong th:text="${products.size()}">0</strong> items
+                    <div class="text-muted" style="font-size: 13.5px;" th:if="${totalItems > 0}">
+                        Showing <strong th:text="${startItem}">1</strong>–<strong th:text="${endItem}">6</strong> of <strong th:text="${totalItems}">57</strong> products
                     </div>
                 </div>
 
@@ -88,7 +87,7 @@
                 </div>
 
                 <!-- Product Card Grid -->
-                <div th:if="${!#lists.isEmpty(products)}" class="product-grid">
+                <div th:if="${!#lists.isEmpty(products)}" class="buyer-product-grid">
                     <div th:each="prod : ${products}" class="product-card">
                         
                         <!-- Image wrapper -->
@@ -139,6 +138,38 @@
                         </div>
 
                     </div>
+                </div>
+
+                <!-- Pagination Bar -->
+                <div th:if="${totalPages > 1}" class="pagination-container">
+                    <!-- Previous Button -->
+                    <a th:href="@{/buyer/dashboard(page=${currentPage - 1}, category=${selectedCategory != null ? selectedCategory.name() : null}, search=${searchKeyword})}"
+                       class="pagination-item"
+                       th:classappend="${currentPage == 1} ? 'disabled' : ''">
+                        Previous
+                    </a>
+
+                    <!-- Page Numbers -->
+                    <th:block th:each="pageNum : ${pageNumbers}">
+                        <!-- Ellipsis -->
+                        <span th:if="${pageNum == '...'}" class="pagination-ellipsis">...</span>
+                        
+                        <!-- Link to Page -->
+                        <a th:if="${pageNum != '...'}"
+                           th:href="@{/buyer/dashboard(page=${pageNum}, category=${selectedCategory != null ? selectedCategory.name() : null}, search=${searchKeyword})}"
+                           class="pagination-item"
+                           th:classappend="${pageNum == #strings.toString(currentPage)} ? 'active' : ''"
+                           th:text="${pageNum}">
+                            1
+                        </a>
+                    </th:block>
+
+                    <!-- Next Button -->
+                    <a th:href="@{/buyer/dashboard(page=${currentPage + 1}, category=${selectedCategory != null ? selectedCategory.name() : null}, search=${searchKeyword})}"
+                       class="pagination-item"
+                       th:classappend="${currentPage == totalPages} ? 'disabled' : ''">
+                        Next
+                    </a>
                 </div>
 
             </div>
